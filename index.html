@@ -337,7 +337,7 @@ $("dt").valueAsDate=new Date();calc();
 
 /* ---------- CV chips ---------- */
 function chips(){
-  const c=[["อายุ",R.age||"–"],["เพศ",R.sex],["SBP",R.sbp||"–"],["รอบเอว (นิ้ว)",R.wcIn||"–"],
+  const c=[["อายุ",R.age||"–"],["เพศ",R.sex],["SBP",R.sbp||"–"],["รอบเอว (นิ้ว)",R.wcI||"–"],
            ["ส่วนสูง (ซม.)",R.ht||"–"],["สูบบุหรี่",R.smoke],["เบาหวาน",R.dm]];
   $("cvChips").innerHTML=c.map(x=>`<span class="chip" onclick="cp('${x[1]}')">${x[0]}: <b>${x[1]}</b> 📋</span>`).join("");
 }
