@@ -84,6 +84,7 @@ iframe{width:100%;height:100%;border:0}
       <div><label>น้ำหนัก (กก.)</label><input id="wt" type="number" inputmode="decimal" step="0.1"></div>
       <div><label>ส่วนสูง (ซม.)</label><input id="ht" type="number" inputmode="decimal" step="0.1"></div>
       <div><label>รอบเอว (ซม.)</label><input id="wc" type="number" inputmode="decimal" step="0.1"><div class="hint" id="wcIn">– นิ้ว</div></div>
+      <div><label>รอบเอว (นิ้ว.)</label><input id="wcI" type="number" inputmode="decimal" step="0.1"><div class="hint" id="wcCm">– เซนติเมตร</div></div>
       <div><label>รอบสะโพก (ซม.)</label><input id="hc" type="number" inputmode="decimal" step="0.1"><div class="hint" id="hcIn">– นิ้ว</div></div>
     </div>
   </div>
@@ -242,6 +243,7 @@ let R={};
 function calc(){
   const wt=n("wt"),ht=n("ht"),age=n("age"),sex=$("sex").value,wc=n("wc"),hc=n("hc"),sbp=n("sbp"),dbp=n("dbp"),gr=n("gr"),gl=n("gl");
   $("wcIn").textContent=wc?(wc/2.54).toFixed(1)+" นิ้ว":"– นิ้ว";
+  $("wcCm").textContent=wc?(wc).toFixed(1)+" เซนติเมตร":"– เซนติเมตร";
   $("hcIn").textContent=hc?(hc/2.54).toFixed(1)+" นิ้ว":"– นิ้ว";
 
   /* BMI */
@@ -335,7 +337,7 @@ $("dt").valueAsDate=new Date();calc();
 
 /* ---------- CV chips ---------- */
 function chips(){
-  const c=[["อายุ",R.age||"–"],["เพศ",R.sex],["SBP",R.sbp||"–"],["รอบเอว (ซม.)",R.wc||"–"],
+  const c=[["อายุ",R.age||"–"],["เพศ",R.sex],["SBP",R.sbp||"–"],["รอบเอว (นิ้ว)",R.wcIn||"–"],
            ["ส่วนสูง (ซม.)",R.ht||"–"],["สูบบุหรี่",R.smoke],["เบาหวาน",R.dm]];
   $("cvChips").innerHTML=c.map(x=>`<span class="chip" onclick="cp('${x[1]}')">${x[0]}: <b>${x[1]}</b> 📋</span>`).join("");
 }
@@ -345,7 +347,7 @@ function openCV(){window.open("https://www.rama.mahidol.ac.th/cardio_vascular_ri
 
 /* ---------- EXCEL / PDF ---------- */
 const COLS=[["วันที่","date"],["ชื่อ-สกุล","name"],["HN","hn"],["เพศ","sex"],["อายุ","age"],["น้ำหนัก(กก.)","wt"],["ส่วนสูง(ซม.)","ht"],
- ["BMI","bmi"],["เกณฑ์ BMI","bmiTxt"],["รอบเอว(ซม.)","wc"],["รอบสะโพก(ซม.)","hc"],["WHR","whr"],["แปลผล WHR","whrTxt"],
+ ["BMI","bmi"],["เกณฑ์ BMI","bmiTxt"],["รอบเอว(ซม.)","wc"],["รอบเอว(นิ้ว)","wcIn"],["รอบสะโพก(ซม.)","hc"],["WHR","whr"],["แปลผล WHR","whrTxt"],
  ["OSTA","osta"],["แปลผล OSTA","ostaTxt"],["SBP","sbp"],["DBP","dbp"],["HT Category","htCat"],["สรุป HT","htTxt"],
  ["บีบมือขวา(กก.)","gr"],["อัตราส่วนขวา","gripR"],["ระดับขวา","gripRTxt"],["บีบมือซ้าย(กก.)","gl"],["อัตราส่วนซ้าย","gripL"],["ระดับซ้าย","gripLTxt"],
  ["สูบบุหรี่","smoke"],["เบาหวาน","dm"],["ประวัติ DM ครอบครัว","fdm"],["คะแนน DM Risk","dmScore"],["สรุป DM Risk","dmTxt"]];
@@ -391,7 +393,7 @@ function renderHist(){
 }
 function reuse(id){const r=load().find(x=>x.id===id);if(!r)return;
   $("name").value=r.name==="(ไม่ระบุชื่อ)"?"":r.name;$("hn").value=r.hn;$("age").value=r.age;$("sex").value=r.sex==="ชาย"?"M":"F";
-  $("wt").value=r.wt;$("ht").value=r.ht;$("wc").value=r.wc;$("hc").value=r.hc;$("sbp").value=r.sbp;$("dbp").value=r.dbp;
+  $("wt").value=r.wt;$("ht").value=r.ht;$("wc").value=r.wc;$("wcI").value=r.wcIn;$("hc").value=r.hc;$("sbp").value=r.sbp;$("dbp").value=r.dbp;
   $("gr").value=r.gr;$("gl").value=r.gl;$("smoke").value=r.smoke==="สูบ"?"1":"0";$("dm").value=r.dm==="เป็น"?"1":"0";
   $("fdm").value=r.fdm==="มี"?"1":"0";$("dt").value=r.date||"";calc();go("out");toast("โหลดข้อมูลแล้ว");}
 function one(id){const r=load().find(x=>x.id===id);dl(xlsBlob([r]),`PCU_${r.name}_${r.date||""}.xls`);toast("บันทึกแล้ว")}
