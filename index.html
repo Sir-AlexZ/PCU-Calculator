@@ -241,7 +241,7 @@ const HT_T=[["Optimal","<120","และ","<80","ต่ำกว่าเกณ�
 /* ---------- CORE CALC ---------- */
 let R={};
 function calc(){
-  const wt=n("wt"),ht=n("ht"),age=n("age"),sex=$("sex").value,wc=n("wc"),hc=n("hc"),sbp=n("sbp"),dbp=n("dbp"),gr=n("gr"),gl=n("gl");
+  const wt=n("wt"),ht=n("ht"),age=n("age"),sex=$("sex").value,wc=n("wc"),wcI=n("wcIn"),hc=n("hc"),sbp=n("sbp"),dbp=n("dbp"),gr=n("gr"),gl=n("gl");
   $("wcIn").textContent=wc?(wc/2.54).toFixed(1)+" นิ้ว":"– นิ้ว";
   $("wcCm").textContent=wc?(wc).toFixed(1)+" เซนติเมตร":"– เซนติเมตร";
   $("hcIn").textContent=hc?(hc/2.54).toFixed(1)+" นิ้ว":"– นิ้ว";
