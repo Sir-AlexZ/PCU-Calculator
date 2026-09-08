@@ -218,18 +218,7 @@ iframe{width:100%;height:100%;border:0}
   </div>
 
   <div class="card">
-    <div class="iw" id="iw">
-      <iframe id="cvFrame" src="https://www.rama.mahidol.ac.th/cardio_vascular_risk/thai_cv_risk_score/" referrerpolicy="no-referrer" allow="clipboard-write"></iframe>
-      <div id="cvFail" class="hidden" style="position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center">
-        <div style="font-size:44px">🔒</div>
-        <b style="font-size:15px">เว็บต้นทางไม่อนุญาตให้แสดงแบบฝัง</b>
-        <div style="font-size:13px;color:#64748b;line-height:1.6;max-width:340px">
-          กดปุ่มด้านล่างเพื่อเปิดในเบราว์เซอร์ — ค่าจากฟอร์มคัดลอกได้จากชิปด้านบน<br>
-          คำนวณเสร็จแล้วกลับมากรอก %CV Risk ในช่องด้านบนเพื่อบันทึกรวมกับรายงาน
-        </div>
-        <button class="btn" onclick="openCV()">🔗 เปิด Thai CV Risk ในเบราว์เซอร์</button>
-      </div>
-    </div>
+    <div class="iw"><iframe id="cvFrame" src="https://www.rama.mahidol.ac.th/cardio_vascular_risk/thai_cv_risk_score/" referrerpolicy="no-referrer" allow="clipboard-write"></iframe></div>
     <div class="hint" style="margin-top:8px">หน้านี้ต้องต่ออินเทอร์เน็ต · ส่วนอื่นของแอปใช้งานออฟไลน์ได้ปกติ</div>
   </div>
 </section>
@@ -410,7 +399,7 @@ function calc(){
 document.querySelectorAll("input,select").forEach(e=>e.addEventListener("input",calc));
 $("dt").valueAsDate=new Date();calc();
 
-/* ---------- CV: chips / clipboard / fallback ---------- */
+/* ---------- CV: chips / clipboard ---------- */
 const CV_URL="https://www.rama.mahidol.ac.th/cardio_vascular_risk/thai_cv_risk_score/";
 function chips(){
   const c=[["อายุ",R.age||"–"],["เพศ",R.sex||"–"],["SBP",R.sbp||"–"],["รอบเอว (ซม.)",R.wc||"–"],
@@ -428,12 +417,6 @@ async function pasteCV(){
     else toast("ไม่พบตัวเลขในคลิปบอร์ด");
   }catch(e){toast("เบราว์เซอร์ไม่อนุญาต — พิมพ์เองได้เลยครับ")}
 }
-/* Auto-fallback */
-(function(){
-  const fr=$("cvFrame");let ok=false;
-  fr.addEventListener("load",()=>{try{ok=!!(fr.contentWindow&&fr.contentWindow.length>=0)}catch(e){ok=true}});
-  setTimeout(()=>{if(!ok)$("cvFail").classList.remove("hidden")},6000);
-})();
 
 /* ---------- EXCEL / PDF ---------- */
 const COLS=[["วันที่","date"],["ชื่อ-สกุล","name"],["HN","hn"],["เพศ","sex"],["อายุ","age"],["น้ำหนัก(กก.)","wt"],["ส่วนสูง(ซม.)","ht"],
