@@ -449,13 +449,6 @@ function toExcel(){
   toast("บันทึกไฟล์ Excel (CSV) แล้ว");
 }
 
-function histExcel(){
-  const a=load();
-  if(!a.length){ toast("ยังไม่มีข้อมูล"); return; }
-  dl(csvBlob(a), `PCU_History_${new Date().toISOString().slice(0,10)}.csv`);
-  toast("ส่งออก " + a.length + " รายการแล้ว");
-}
-
 /* ---------- HISTORY ---------- */
 const KEY="pcu_history_v1";
 const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return[]}};
@@ -499,6 +492,12 @@ function reuse(id){const r=load().find(x=>x.id===id);if(!r)return;
 function one(id){const r=load().find(x=>x.id===id);dl(xlsBlob([r]),`PCU_${r.name}_${r.date||""}.xls`);toast("บันทึกแล้ว")}
 function del(id){if(!confirm("ลบรายการนี้?"))return;save(load().filter(x=>x.id!==id));renderHist();toast("ลบแล้ว")}
 function wipe(){if(!confirm("ลบประวัติทั้งหมดถาวร?"))return;save([]);renderHist();toast("ลบทั้งหมดแล้ว")}
+  function histExcel(){
+  const a=load();
+  if(!a.length){ toast("ยังไม่มีข้อมูล"); return; }
+  dl(csvBlob(a), `PCU_History_${new Date().toISOString().slice(0,10)}.csv`);
+  toast("ส่งออก " + a.length + " รายการแล้ว");
+}
 function clearForm(){if(!confirm("ล้างข้อมูลในฟอร์ม?"))return;
   document.querySelectorAll("input").forEach(i=>{if(i.id!=="q")i.value=""});$("sex").value="M";
   ["smoke","dm","fdm"].forEach(i=>$(i).value="0");$("dt").valueAsDate=new Date();calc();toast("ล้างแล้ว")}
