@@ -428,6 +428,7 @@ const COLS=[["วันที่","date"],["ชื่อ-สกุล","name"],[
  ["บีบมือขวา(กก.)","gr"],["อัตราส่วนขวา","gripR"],["ระดับขวา","gripRTxt"],["บีบมือซ้าย(กก.)","gl"],["อัตราส่วนซ้าย","gripL"],["ระดับซ้าย","gripLTxt"],
  ["สูบบุหรี่","smoke"],["เบาหวาน","dm"],["ประวัติ DM ครอบครัว","fdm"],["คะแนน DM Risk","dmScore"],["สรุป DM Risk","dmTxt"],
  ["%CV Risk (10 ปี)","cvRisk"],["ระดับ CV Risk","cvTxt"]];
+const xlsBlob = rows => csvBlob(rows);
 function csvBlob(rows){
   // หัวตาราง
   let csv = COLS.map(c => `"${c[0]}"`).join(",") + "\r\n";
