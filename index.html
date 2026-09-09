@@ -428,26 +428,38 @@ const COLS=[["วันที่","date"],["ชื่อ-สกุล","name"],[
  ["บีบมือขวา(กก.)","gr"],["อัตราส่วนขวา","gripR"],["ระดับขวา","gripRTxt"],["บีบมือซ้าย(กก.)","gl"],["อัตราส่วนซ้าย","gripL"],["ระดับซ้าย","gripLTxt"],
  ["สูบบุหรี่","smoke"],["เบาหวาน","dm"],["ประวัติ DM ครอบครัว","fdm"],["คะแนน DM Risk","dmScore"],["สรุป DM Risk","dmTxt"],
  ["%CV Risk (10 ปี)","cvRisk"],["ระดับ CV Risk","cvTxt"]];
-const xlsBlob = rows => csvBlob(rows);
-function csvBlob(rows){
-  // หัวตาราง
+/* ---------- EXCEL / CSV Export Functions ---------- */
+function dl(blob, fn) {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = fn;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+
+function csvBlob(rows) {
   let csv = COLS.map(c => `"${c[0]}"`).join(",") + "\r\n";
-  // แถวข้อมูล
   rows.forEach(r => {
     let row = COLS.map(c => {
       let val = r[c[1]] ?? "";
-      return `"${String(val).replace(/"/g, '""')}"`; // ป้องกันเครื่องหมายคำพูดพังตาราง
+      return `"${String(val).replace(/"/g, '""')}"`;
     }).join(",");
     csv += row + "\r\n";
   });
-  // ใส่ \ufeff (BOM) เพื่อให้ Excel อ่านภาษาไทยออก 100%
   return new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
 }
 
-function toExcel(){
+function toExcel() {
   calc();
   dl(csvBlob([R]), `PCU_${(R.name||"record").replace(/\s/g,"")}_${R.date||""}.csv`);
   toast("บันทึกไฟล์ Excel (CSV) แล้ว");
+}
+
+function histExcel() {
+  const a = load();
+  if (!a.length) { toast("ยังไม่มีข้อมูล"); return; }
+  dl(csvBlob(a), `PCU_History_${new Date().toISOString().slice(0,10)}.csv`);
+  toast("ส่งออก " + a.length + " รายการแล้ว");
 }
 
 /* ---------- HISTORY ---------- */
@@ -490,7 +502,11 @@ function reuse(id){const r=load().find(x=>x.id===id);if(!r)return;
   $("fdm").value=r.fdm==="มี"?"1":"0";$("dt").value=r.date||"";
   $("cvPct").value=(r.cvRisk??"");
   calc();go("out");toast("โหลดข้อมูลแล้ว");}
-function one(id){const r=load().find(x=>x.id===id);dl(csvBlob([r]),`PCU_${r.name}_${r.date||""}.csv`);toast("บันทึกแล้ว")}
+function one(id){
+  const r = load().find(x => x.id === id);
+  dl(csvBlob([r]), `PCU_${r.name}_${r.date||""}.csv`);
+  toast("บันทึกแล้ว");
+}
 function del(id){if(!confirm("ลบรายการนี้?"))return;save(load().filter(x=>x.id!==id));renderHist();toast("ลบแล้ว")}
 function wipe(){if(!confirm("ลบประวัติทั้งหมดถาวร?"))return;save([]);renderHist();toast("ลบทั้งหมดแล้ว")}
   function histExcel(){
