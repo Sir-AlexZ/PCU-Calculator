@@ -489,7 +489,7 @@ function reuse(id){const r=load().find(x=>x.id===id);if(!r)return;
   $("fdm").value=r.fdm==="มี"?"1":"0";$("dt").value=r.date||"";
   $("cvPct").value=(r.cvRisk??"");
   calc();go("out");toast("โหลดข้อมูลแล้ว");}
-function one(id){const r=load().find(x=>x.id===id);dl(xlsBlob([r]),`PCU_${r.name}_${r.date||""}.xls`);toast("บันทึกแล้ว")}
+function one(id){const r=load().find(x=>x.id===id);dl(csvBlob([r]),`PCU_${r.name}_${r.date||""}.csv`);toast("บันทึกแล้ว")}
 function del(id){if(!confirm("ลบรายการนี้?"))return;save(load().filter(x=>x.id!==id));renderHist();toast("ลบแล้ว")}
 function wipe(){if(!confirm("ลบประวัติทั้งหมดถาวร?"))return;save([]);renderHist();toast("ลบทั้งหมดแล้ว")}
   function histExcel(){
