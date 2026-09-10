@@ -74,7 +74,7 @@ iframe{width:100%;height:100%;border:0}
       <div><label>ชื่อ–สกุล</label><input id="name" placeholder="เช่น นายสมชาย ใจดี"></div>
       <div><label>HN / เลขที่</label><input id="hn" placeholder="เช่น 123456"></div>
       <div><label>อายุ (ปี)</label><input id="age" type="number" inputmode="numeric" min="1" max="120"></div>
-      <div><label>เพศ</label><select id="sex"><option value="M">ชาย</option><option value="F">หญิง</option></select></div>
+      <div><label>เพศ</label><select id="sex"><option value="" selected disabled>- กรุณาเลือก -</option><option value="M">ชาย</option><option value="F">หญิง</option></select></div>
     </div>
   </div>
 
@@ -101,9 +101,9 @@ iframe{width:100%;height:100%;border:0}
   <div class="card">
     <h3>ปัจจัยเสี่ยง</h3>
     <div class="grid">
-      <div><label>สูบบุหรี่</label><select id="smoke"><option value="0">ไม่สูบ</option><option value="1">สูบ</option></select></div>
-      <div><label>เป็นโรคเบาหวาน</label><select id="dm"><option value="0">ไม่เป็น</option><option value="1">เป็น</option></select></div>
-      <div><label>ประวัติเบาหวานในครอบครัว</label><select id="fdm"><option value="0">ไม่มี</option><option value="1">มี (พ่อ/แม่/พี่/น้อง)</option></select></div>
+      <div><label>สูบบุหรี่</label><select id="smoke"><option value="" selected disabled>- กรุณาเลือก -</option><option value="0">ไม่สูบ</option><option value="1">สูบ</option></select></div>
+      <div><label>เป็นโรคเบาหวาน</label><select id="dm"><option value="" selected disabled>- กรุณาเลือก -</option><option value="0">ไม่เป็น</option><option value="1">เป็น</option></select></div>
+      <div><label>ประวัติเบาหวานในครอบครัว</label><select id="fdm"><option value="" selected disabled>- กรุณาเลือก -</option><option value="0">ไม่มี</option><option value="1">มี (พ่อ/แม่/พี่/น้อง)</option></select></div>
       <div><label>วันที่ตรวจ</label><input id="dt" type="date"></div>
     </div>
   </div>
@@ -274,6 +274,7 @@ const HT_T=[["Optimal","<120","และ","<80","ต่ำกว่าเกณ�
 let R={};
 function calc(){
   const wt=n("wt"),ht=n("ht"),age=n("age"),sex=$("sex").value,wc=n("wc"),hc=n("hc"),sbp=n("sbp"),dbp=n("dbp"),gr=n("gr"),gl=n("gl");
+  const blank=id=>$(id).value==="";
   $("wcIn").textContent=wc?(wc/2.54).toFixed(1)+" นิ้ว":"– นิ้ว";
   $("hcIn").textContent=hc?(hc/2.54).toFixed(1)+" นิ้ว":"– นิ้ว";
 
@@ -288,12 +289,17 @@ function calc(){
   $("bmiTb").innerHTML=tb;
 
   /* --- WHR + แปลผลรอบเอว --- */
-  const whr=(wc>0&&hc>0)?wc/hc:0, wcCut=sex==="M"?90:80, whrCut=sex==="M"?0.90:0.85;
+  const sexOK = sex==="M" || sex==="F";
+  const whr=(wc>0&&hc>0)?wc/hc:0;
+  const wcCut = sexOK ? (sex==="M"?90:80) : null;
+  const whrCut = sexOK ? (sex==="M"?0.90:0.85) : null;
   const wcInch = wc>0 ? +(wc/2.54).toFixed(1) : "";
   const hcInch = hc>0 ? +(hc/2.54).toFixed(1) : "";
-  const inchCut = sex==="M" ? 35.4 : 31.5;
+  const inchCut = sexOK ? (sex==="M"?35.4:31.5) : null;
   let wcTxt = "";
-  if(wc>0){
+  if(!sexOK){
+    setTag($("wcTag"), "กรุณาเลือกเพศก่อน", "t-mut");
+  } else if(wc>0){
     const over = (wc >= wcCut) || (wc/2.54 >= inchCut);
     wcTxt = over ? "เกินเกณฑ์มาตรฐาน" : "อยู่ในเกณฑ์มาตรฐาน";
     setTag($("wcTag"), wcTxt, over ? "t-bad" : "t-ok");
@@ -303,9 +309,13 @@ function calc(){
   $("hcV").innerHTML=hc?`${hc.toFixed(1)} ซม. <small style="font-size:11px;color:#64748b">(${hcInch} นิ้ว)</small>`:"–";
   $("whrV").textContent=whr?whr.toFixed(2):"–";
   let whrTxt="";
-  if(whr){const ob=whr>=whrCut;whrTxt=ob?"อ้วนลงพุง (เสี่ยง)":"ปกติ";setTag($("whrT"),whrTxt,ob?"t-bad":"t-ok");}
+  if(!sexOK){
+    setTag($("whrT"),"กรุณาเลือกเพศก่อน","t-mut");
+  } else if(whr){const ob=whr>=whrCut;whrTxt=ob?"อ้วนลงพุง (เสี่ยง)":"ปกติ";setTag($("whrT"),whrTxt,ob?"t-bad":"t-ok");}
   else setTag($("whrT"),"กรอกรอบเอว/สะโพก","t-mut");
-  $("whrM").textContent=`เกณฑ์${sex==="M"?"ชาย":"หญิง"}: รอบเอว ≥ ${wcCut} ซม. (${inchCut} นิ้ว) = เกินเกณฑ์ · WHR ≥ ${whrCut.toFixed(2)} = อ้วนลงพุง`;
+  $("whrM").textContent = sexOK
+    ? `เกณฑ์${sex==="M"?"ชาย":"หญิง"}: รอบเอว ≥ ${wcCut} ซม. (${inchCut} นิ้ว) = เกินเกณฑ์ · WHR ≥ ${whrCut.toFixed(2)} = อ้วนลงพุง`
+    : "กรุณาเลือกเพศก่อนเพื่อดูเกณฑ์อ้างอิง";
   $("wcTb").innerHTML=`<tr><th>เพศ</th><th>รอบเอว (ซม.)</th><th>รอบเอว (นิ้ว)</th><th>การแปลผล</th></tr>
     <tr class="${sex==='M'&&wcTxt==='อยู่ในเกณฑ์มาตรฐาน'?'hl':''}"><td>ชาย</td><td>&lt; 90</td><td>&lt; 35.4</td><td>อยู่ในเกณฑ์มาตรฐาน</td></tr>
     <tr class="${sex==='M'&&wcTxt==='เกินเกณฑ์มาตรฐาน'?'hl':''}"><td>ชาย</td><td>≥ 90</td><td>≥ 35.4</td><td>เกินเกณฑ์มาตรฐาน</td></tr>
@@ -323,15 +333,17 @@ function calc(){
   $("ostaV").textContent=osta!==null?osta.toFixed(2):"–";
 
   /* --- GRIP --- */
-  const tbl=GRIP[sex];
+  const tbl = sexOK ? GRIP[sex] : null;
   const gv=g=>(wt>0&&g>0)?g/wt:0;
-  const gi=v=>v?tbl.find(r=>v>=r[0]):null;
+  const gi=v=>(v&&tbl)?tbl.find(r=>v>=r[0]):null;
   const rr=gv(gr),lr=gv(gl),ri=gi(rr),li=gi(lr);
   $("grV").textContent=rr?rr.toFixed(2):"–";$("glV").textContent=lr?lr.toFixed(2):"–";
-  ri?setTag($("grT"),ri[1],ri[2]):setTag($("grT"),"–","t-mut");
-  li?setTag($("glT"),li[1],li[2]):setTag($("glT"),"–","t-mut");
-  let gt=`<tr><th>ระดับ (${sex==="M"?"ชาย":"หญิง"})</th><th>ค่าอ้างอิง</th><th>ขวา</th><th>ซ้าย</th></tr>`;
-  tbl.forEach(r=>gt+=`<tr class="${(ri===r||li===r)?'hl':''}"><td>${r[1]}</td><td>${r[3]}</td><td>${ri===r?rr.toFixed(2):""}</td><td>${li===r?lr.toFixed(2):""}</td></tr>`);
+  ri?setTag($("grT"),ri[1],ri[2]):setTag($("grT"), sexOK?"–":"กรุณาเลือกเพศก่อน","t-mut");
+  li?setTag($("glT"),li[1],li[2]):setTag($("glT"), sexOK?"–":"กรุณาเลือกเพศก่อน","t-mut");
+  let gt = sexOK
+    ? `<tr><th>ระดับ (${sex==="M"?"ชาย":"หญิง"})</th><th>ค่าอ้างอิง</th><th>ขวา</th><th>ซ้าย</th></tr>`
+    : `<tr><td colspan="4">กรุณาเลือกเพศก่อนเพื่อดูตารางอ้างอิง</td></tr>`;
+  if(tbl) tbl.forEach(r=>gt+=`<tr class="${(ri===r||li===r)?'hl':''}"><td>${r[1]}</td><td>${r[3]}</td><td>${ri===r?rr.toFixed(2):""}</td><td>${li===r?lr.toFixed(2):""}</td></tr>`);
   $("gripTb").innerHTML=gt;
 
   /* --- HT --- */
@@ -351,17 +363,21 @@ function calc(){
   $("htTb").innerHTML=ht2;
 
   /* --- DM RISK --- */
-  const D=[];let tot=0,p=0;
+  const fdmVal=$("fdm").value;
+  const D=[];let tot=0,p=0,dmIncomplete=false;
   p=age>=50?2:age>=45?1:0; D.push(["อายุ",age?age+" ปี":"–",p]);tot+=p;
-  p=sex==="M"?2:0; D.push(["เพศ",sex==="M"?"ชาย":"หญิง",p]);tot+=p;
+  if(sexOK){ p=sex==="M"?2:0; D.push(["เพศ",sex==="M"?"ชาย":"หญิง",p]); tot+=p; }
+  else { D.push(["เพศ","ยังไม่ได้เลือก","–"]); dmIncomplete=true; }
   p=bmi>=27.5?5:bmi>=23?3:0; D.push(["ดัชนีมวลกาย",bmi?bmi.toFixed(1)+" kg/m²":"–",p]);tot+=p;
-  p=(wc>=wcCut&&wc>0)?2:0; D.push(["รอบเอว",wc?wc.toFixed(0)+" ซม.":"–",p]);tot+=p;
+  p=(sexOK&&wc>=wcCut&&wc>0)?2:0; D.push(["รอบเอว",wc?wc.toFixed(0)+" ซม.":"–",p]);tot+=p;
   p=(sbp>=140||dbp>=90)?2:0; D.push(["ความดันโลหิต",(sbp&&dbp)?sbp+"/"+dbp:"–",p]);tot+=p;
-  p=$("fdm").value==="1"?4:0; D.push(["ประวัติ DM ในครอบครัว",$("fdm").value==="1"?"มี":"ไม่มี",p]);tot+=p;
+  if(fdmVal===""){ D.push(["ประวัติ DM ในครอบครัว","ยังไม่ได้เลือก","–"]); dmIncomplete=true; }
+  else { p=fdmVal==="1"?4:0; D.push(["ประวัติ DM ในครอบครัว",fdmVal==="1"?"มี":"ไม่มี",p]); tot+=p; }
   let dTxt,dCls;
-  if(tot<=2){dTxt="เสี่ยงน้อย";dCls="t-ok"}else if(tot<=5){dTxt="เสี่ยงปานกลาง";dCls="t-warn"}
+  if(dmIncomplete){ dTxt="กรอกข้อมูลไม่ครบ"; dCls="t-mut"; }
+  else if(tot<=2){dTxt="เสี่ยงน้อย";dCls="t-ok"}else if(tot<=5){dTxt="เสี่ยงปานกลาง";dCls="t-warn"}
   else if(tot<=8){dTxt="เสี่ยงสูง";dCls="t-bad"}else{dTxt="เสี่ยงสูงมาก";dCls="t-vbad"}
-  $("dmV").textContent=tot;setTag($("dmT"),dTxt,dCls);
+  $("dmV").textContent = dmIncomplete ? "–" : tot; setTag($("dmT"),dTxt,dCls);
   let dt2="<tr><th>ปัจจัย</th><th>ค่าที่ได้</th><th>คะแนน</th></tr>";
   D.forEach(r=>dt2+=`<tr><td>${r[0]}</td><td>${r[1]}</td><td><b>${r[2]}</b></td></tr>`);
   dt2+=`<tr class="hl"><td colspan="2">รวมคะแนน</td><td><b>${tot}</b></td></tr>`;
@@ -385,15 +401,22 @@ function calc(){
 
   /* --- header --- */
   const nm=$("name").value.trim()||"(ไม่ระบุชื่อ)",hn=$("hn").value.trim();
-  $("who").innerHTML=`<b style="color:#0f172a;font-size:15px">${nm}</b>${hn?" · HN "+hn:""} · ${sex==="M"?"ชาย":"หญิง"} ${age||"–"} ปี · วันที่ ${$("dt").value||"–"}`;
+  const sexTxt = sex==="M"?"ชาย":sex==="F"?"หญิง":"ยังไม่ระบุเพศ";
+  const smokeVal=$("smoke").value, dmVal=$("dm").value;
+  $("who").innerHTML=`<b style="color:#0f172a;font-size:15px">${nm}</b>${hn?" · HN "+hn:""} · ${sexTxt} ${age||"–"} ปี · วันที่ ${$("dt").value||"–"}`;
 
-  R={name:nm,hn,date:$("dt").value,age,sex:sex==="M"?"ชาย":"หญิง",wt,ht,wc,hc,sbp,dbp,gr,gl,
-     smoke:$("smoke").value==="1"?"สูบ":"ไม่สูบ",dm:$("dm").value==="1"?"เป็น":"ไม่เป็น",fdm:$("fdm").value==="1"?"มี":"ไม่มี",
+  R={name:nm,hn,date:$("dt").value,
+     age:blank("age")?"":age,
+     sex:sex==="M"?"ชาย":sex==="F"?"หญิง":"",
+     wt:blank("wt")?"":wt, ht:blank("ht")?"":ht, wc:blank("wc")?"":wc, hc:blank("hc")?"":hc,
+     sbp:blank("sbp")?"":sbp, dbp:blank("dbp")?"":dbp, gr:blank("gr")?"":gr, gl:blank("gl")?"":gl,
+     smoke:smokeVal==="1"?"สูบ":smokeVal==="0"?"ไม่สูบ":"",dm:dmVal==="1"?"เป็น":dmVal==="0"?"ไม่เป็น":"",fdm:fdmVal==="1"?"มี":fdmVal==="0"?"ไม่มี":"",
      bmi:bmi?+bmi.toFixed(1):"",bmiTxt:bmi?bi[2]:"",whr:whr?+whr.toFixed(2):"",whrTxt,
      wcInch,hcInch,wcTxt,
      cvRisk:isFinite(cv)?+cv.toFixed(1):"",cvTxt:isFinite(cv)?cvTxt:"",
      osta:osta!==null?+osta.toFixed(2):"",ostaTxt,gripR:rr?+rr.toFixed(2):"",gripRTxt:ri?ri[1]:"",
-     gripL:lr?+lr.toFixed(2):"",gripLTxt:li?li[1]:"",htCat:hRow?hRow[0]:"",htTxt:hRow?hRow[4]:"",dmScore:tot,dmTxt:dTxt};
+     gripL:lr?+lr.toFixed(2):"",gripLTxt:li?li[1]:"",htCat:hRow?hRow[0]:"",htTxt:hRow?hRow[4]:"",
+     dmScore:dmIncomplete?"":tot,dmTxt:dTxt};
   chips();
 }
 document.querySelectorAll("input,select").forEach(e=>e.addEventListener("input",calc));
@@ -468,7 +491,6 @@ const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){re
 const save=a=>localStorage.setItem(KEY,JSON.stringify(a));
 function saveRec(){
   calc();
-  if(!R.wt||!R.ht){toast("กรุณากรอกน้ำหนักและส่วนสูงก่อน");return}
   const a=load();a.unshift({...R,id:Date.now(),ts:new Date().toLocaleString("th-TH")});
   save(a);toast("บันทึกลงเครื่องแล้ว ✓");renderHist();
 }
@@ -478,15 +500,15 @@ function renderHist(){
   $("cnt").textContent=a.length+" ราย";
   $("histList").innerHTML=f.length?f.map(r=>`<div class="hist">
     <b>${r.name}</b> ${r.hn?`<span style="color:#64748b">· HN ${r.hn}</span>`:""}
-    <div class="m">${r.ts} · ${r.sex} ${r.age} ปี</div>
+    <div class="m">${r.ts} · ${r.sex||"ยังไม่ระบุเพศ"} ${r.age!==""&&r.age!=null?r.age+" ปี":"อายุ: ยังไม่ได้กรอก"}</div>
     <div class="chips">
-      <span class="chip">BMI ${r.bmi} (${r.bmiTxt})</span>
-      <span class="chip">WHR ${r.whr}</span>
-      <span class="chip">OSTA ${r.osta} (${r.ostaTxt})</span>
-      <span class="chip">BP ${r.sbp}/${r.dbp} ${r.htCat}</span>
-      <span class="chip">DM ${r.dmScore} คะแนน (${r.dmTxt})</span>
-      <span class="chip">Grip R ${r.gripR} / L ${r.gripL}</span>
-      <span class="chip">รอบเอว ${r.wc} ซม. (${r.wcInch||"–"} นิ้ว) ${r.wcTxt||""}</span>
+      <span class="chip">BMI ${r.bmi!==""&&r.bmi!=null?r.bmi+` (${r.bmiTxt})`:"ยังไม่ได้กรอก"}</span>
+      <span class="chip">WHR ${r.whr!==""&&r.whr!=null?r.whr:"ยังไม่ได้กรอก"}</span>
+      <span class="chip">OSTA ${r.osta!==""&&r.osta!=null?r.osta+` (${r.ostaTxt})`:"ยังไม่ได้กรอก"}</span>
+      <span class="chip">BP ${(r.sbp!==""&&r.sbp!=null&&r.dbp!==""&&r.dbp!=null)?`${r.sbp}/${r.dbp} ${r.htCat}`:"ยังไม่ได้กรอก"}</span>
+      <span class="chip">DM ${r.dmScore!==""&&r.dmScore!=null?r.dmScore+` คะแนน (${r.dmTxt})`:"ยังไม่ได้กรอกครบ"}</span>
+      <span class="chip">Grip R ${r.gripR!==""&&r.gripR!=null?r.gripR:"–"} / L ${r.gripL!==""&&r.gripL!=null?r.gripL:"–"}</span>
+      <span class="chip">รอบเอว ${r.wc!==""&&r.wc!=null?`${r.wc} ซม. (${r.wcInch||"–"} นิ้ว) ${r.wcTxt||""}`:"ยังไม่ได้กรอก"}</span>
       ${(r.cvRisk!==""&&r.cvRisk!=null)?`<span class="chip">CV Risk ${r.cvRisk}% (${r.cvTxt})</span>`:""}
     </div>
     <div class="row">
@@ -496,10 +518,13 @@ function renderHist(){
     </div></div>`).join(""):`<div class="card" style="text-align:center;color:#64748b">ยังไม่มีข้อมูล</div>`;
 }
 function reuse(id){const r=load().find(x=>x.id===id);if(!r)return;
-  $("name").value=r.name==="(ไม่ระบุชื่อ)"?"":r.name;$("hn").value=r.hn;$("age").value=r.age;$("sex").value=r.sex==="ชาย"?"M":"F";
+  $("name").value=r.name==="(ไม่ระบุชื่อ)"?"":r.name;$("hn").value=r.hn;$("age").value=r.age;
+  $("sex").value=r.sex==="ชาย"?"M":r.sex==="หญิง"?"F":"";
   $("wt").value=r.wt;$("ht").value=r.ht;$("wc").value=r.wc;$("hc").value=r.hc;$("sbp").value=r.sbp;$("dbp").value=r.dbp;
-  $("gr").value=r.gr;$("gl").value=r.gl;$("smoke").value=r.smoke==="สูบ"?"1":"0";$("dm").value=r.dm==="เป็น"?"1":"0";
-  $("fdm").value=r.fdm==="มี"?"1":"0";$("dt").value=r.date||"";
+  $("gr").value=r.gr;$("gl").value=r.gl;
+  $("smoke").value=r.smoke==="สูบ"?"1":r.smoke==="ไม่สูบ"?"0":"";
+  $("dm").value=r.dm==="เป็น"?"1":r.dm==="ไม่เป็น"?"0":"";
+  $("fdm").value=r.fdm==="มี"?"1":r.fdm==="ไม่มี"?"0":"";$("dt").value=r.date||"";
   $("cvPct").value=(r.cvRisk??"");
   calc();go("out");toast("โหลดข้อมูลแล้ว");}
 function one(id){
@@ -516,8 +541,8 @@ function wipe(){if(!confirm("ลบประวัติทั้งหมดถ
   toast("ส่งออก " + a.length + " รายการแล้ว");
 }
 function clearForm(){if(!confirm("ล้างข้อมูลในฟอร์ม?"))return;
-  document.querySelectorAll("input").forEach(i=>{if(i.id!=="q")i.value=""});$("sex").value="M";
-  ["smoke","dm","fdm"].forEach(i=>$(i).value="0");$("dt").valueAsDate=new Date();calc();toast("ล้างแล้ว")}
+  document.querySelectorAll("input").forEach(i=>{if(i.id!=="q")i.value=""});$("sex").value="";
+  ["smoke","dm","fdm"].forEach(i=>$(i).value="");$("dt").valueAsDate=new Date();calc();toast("ล้างแล้ว")}
 renderHist();
 </script>
 </body>
