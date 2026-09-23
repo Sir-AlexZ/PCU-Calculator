@@ -1,15 +1,39 @@
-const C="pcu-v1";
+const C="pcu-v2"; // ↑ เพิ่มเลขนี้ทุกครั้งที่ต้องการบังคับล้างแคชไฟล์อื่นๆ (css/รูป) — สำหรับ index.html ตอนนี้ไม่จำเป็นแล้วเพราะใช้ network-first
+const ASSETS=["./","./index.html"];
+
 self.addEventListener("install",e=>{
-  e.waitUntil(caches.open(C).then(c=>c.addAll(["./","./index.html"])));
-  self.skipWaiting();
+  e.waitUntil(caches.open(C).then(c=>c.addAll(ASSETS)));
+  self.skipWaiting(); // ให้ Service Worker เวอร์ชันใหม่เข้าควบคุมทันที ไม่ต้องรอปิดแท็บเก่าทั้งหมดก่อน
 });
+
 self.addEventListener("activate",e=>{
   e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))));
-  self.clients.claim();
+  self.clients.claim(); // ให้เข้าควบคุมหน้าเว็บที่เปิดอยู่แล้วทันที ไม่ต้องรีเฟรชสองรอบ
 });
+
 self.addEventListener("fetch",e=>{
-  if(e.request.mode==="navigate"||new URL(e.request.url).origin===location.origin)
-    e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
-      const cp=res.clone();caches.open(C).then(c=>c.put(e.request,cp));return res;
-    }).catch(()=>caches.match("./index.html"))));
+  const req=e.request;
+  const sameOrigin=new URL(req.url).origin===location.origin;
+  if(!sameOrigin) return; // ปล่อยผ่าน ไม่ยุ่งกับ request ไปเว็บอื่น (เช่น iframe ของมหิดล)
+
+  // ---- หน้า HTML (navigate) : โหลดจากเน็ตก่อนเสมอ เพื่อให้เห็นของใหม่ล่าสุดทันทีที่มีเน็ต ----
+  if(req.mode==="navigate"){
+    e.respondWith(
+      fetch(req).then(res=>{
+        const cp=res.clone();
+        caches.open(C).then(c=>c.put(req,cp)); // เก็บสำเนาล่าสุดไว้ใช้ตอนออฟไลน์
+        return res;
+      }).catch(()=>caches.match("./index.html")) // ไม่มีเน็ต → ค่อย fallback ไปใช้แคชเก่า
+    );
+    return;
+  }
+
+  // ---- ไฟล์อื่นๆ (css/js/รูป) : ใช้แคชก่อนเพื่อความเร็ว เหมือนของเดิม ----
+  e.respondWith(
+    caches.match(req).then(r=>r || fetch(req).then(res=>{
+      const cp=res.clone();
+      caches.open(C).then(c=>c.put(req,cp));
+      return res;
+    }))
+  );
 });
