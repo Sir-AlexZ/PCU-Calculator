@@ -1,21 +1,32 @@
-/* ===== สีโหมดสว่าง (ค่าเริ่มต้น) ===== */
-:root{color-scheme:light;
+/* ===== สีโหมดสว่าง (ค่าเริ่มต้น) =====
+   color-scheme บรรทัดแรกเป็นค่าสำรอง บรรทัดที่สอง ("only") สั่งไม่ให้เบราว์เซอร์กลับสีหน้าเว็บซ้ำ */
+:root{color-scheme:light;color-scheme:light only;
   --bg:#f1f5f9;--card:#fff;--line:#e2e8f0;--txt:#0f172a;--mut:#64748b;
-  --pri:#0ea5e9;--ok:#16a34a;--warn:#f59e0b;--bad:#dc2626;--vbad:#7f1d1d;
+  --pri:#0ea5e9;--ok:#16a34a;--warn:#f59e0b;--bad:#dc2626;--vbad:#7f1d1d;--vbad-ring:transparent;
   --hdr1:#0ea5e9;--hdr2:#0369a1;--nav:#fff;--field:#fff;--field-line:#cbd5e1;
   --th:#f8fafc;--hl:#e0f2fe;--chip:#f1f5f9;
   --note-bg:#fffbeb;--note-line:#fcd34d;--note-txt:#78350f;
   --btn-d:#475569;--toast-bg:#0f172a;--toast-txt:#fff;--shadow:#0f172a0d}
 
-/* ===== สีโหมดมืด (ใช้เมื่อ <html data-theme="dark">) ===== */
-:root[data-theme="dark"]{color-scheme:dark;
+/* ===== สีโหมดมืด (2 บล็อกด้านล่างต้องมีค่าเหมือนกัน — แก้ที่หนึ่งต้องแก้อีกที่) =====
+   บล็อก 1: โหมด "ตามระบบ" เมื่ออุปกรณ์เป็นโหมดมืด (ยังไม่ได้เลือกสว่างเอง) */
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){color-scheme:dark;color-scheme:dark only;
+    --bg:#0f172a;--card:#1e293b;--line:#334155;--txt:#e2e8f0;--mut:#94a3b8;
+    --vbad:#991b1b;--vbad-ring:#fca5a5;
+    --hdr1:#0c4a6e;--hdr2:#082f49;--nav:#1e293b;--field:#0f172a;--field-line:#475569;
+    --th:#273449;--hl:#0c4a6e;--chip:#334155;
+    --note-bg:#422006;--note-line:#a16207;--note-txt:#fde68a;
+    --btn-d:#64748b;--toast-bg:#e2e8f0;--toast-txt:#0f172a;--shadow:#0006}
+}
+/* บล็อก 2: ผู้ใช้กดเลือก "มืด" เอง (JS ตั้ง data-theme="dark") */
+:root[data-theme="dark"]{color-scheme:dark;color-scheme:dark only;
   --bg:#0f172a;--card:#1e293b;--line:#334155;--txt:#e2e8f0;--mut:#94a3b8;
-  --vbad:#991b1b;
+  --vbad:#991b1b;--vbad-ring:#fca5a5;
   --hdr1:#0c4a6e;--hdr2:#082f49;--nav:#1e293b;--field:#0f172a;--field-line:#475569;
   --th:#273449;--hl:#0c4a6e;--chip:#334155;
   --note-bg:#422006;--note-line:#a16207;--note-txt:#fde68a;
   --btn-d:#64748b;--toast-bg:#e2e8f0;--toast-txt:#0f172a;--shadow:#0006}
-@media screen{:root[data-theme="dark"] .t-vbad{box-shadow:0 0 0 1px #fca5a5}}
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{margin:0;font-family:-apple-system,"Segoe UI","Sarabun","Noto Sans Thai",sans-serif;background:var(--bg);color:var(--txt);padding-bottom:80px}
@@ -47,7 +58,7 @@ input:focus,select:focus{outline:2px solid var(--pri);border-color:var(--pri)}
 .res:last-child{border:0}.res .k{font-size:13px;color:var(--mut)}
 .res .v{font-size:19px;font-weight:800;text-align:right}
 .tag{display:inline-block;padding:4px 11px;border-radius:999px;font-size:12px;font-weight:700;color:#fff;margin-top:3px}
-.t-ok{background:var(--ok)}.t-warn{background:var(--warn)}.t-bad{background:var(--bad)}.t-vbad{background:var(--vbad)}.t-mut{background:#94a3b8}
+.t-ok{background:var(--ok)}.t-warn{background:var(--warn)}.t-bad{background:var(--bad)}.t-vbad{background:var(--vbad);box-shadow:0 0 0 1px var(--vbad-ring)}.t-mut{background:#94a3b8}
 table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
 th,td{border:1px solid var(--line);padding:6px 8px;text-align:left}th{background:var(--th)}
 tr.hl td{background:var(--hl);font-weight:700}
@@ -65,8 +76,8 @@ iframe{width:100%;height:100%;border:0}
 /* ===== พิมพ์ / บันทึก PDF: บังคับสีสว่างเสมอ แม้ใช้โหมดมืดอยู่ =====
    ต้องมีตัวแปรชุดเดียวกับบล็อกโหมดมืดด้านบน (ถ้าเพิ่มตัวแปรสีในโหมดมืด ให้เพิ่มที่นี่ด้วย) */
 @media print{
-  :root[data-theme="dark"]{color-scheme:light;
-    --bg:#f1f5f9;--card:#fff;--line:#e2e8f0;--txt:#0f172a;--mut:#64748b;--vbad:#7f1d1d;
+  :root:not([data-theme="light"]){color-scheme:light;color-scheme:light only;
+    --bg:#f1f5f9;--card:#fff;--line:#e2e8f0;--txt:#0f172a;--mut:#64748b;--vbad:#7f1d1d;--vbad-ring:transparent;
     --th:#f8fafc;--hl:#e0f2fe;--chip:#f1f5f9;
     --note-bg:#fffbeb;--note-line:#fcd34d;--note-txt:#78350f;--shadow:#0f172a0d;--field:#fff;--field-line:#cbd5e1}
   nav,header,.noprint{display:none!important}body{background:#fff;padding:0}.card{break-inside:avoid;box-shadow:none}main{max-width:100%}}
