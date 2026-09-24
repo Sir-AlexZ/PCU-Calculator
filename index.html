@@ -16,14 +16,18 @@
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180.png">
 <link rel="manifest" href="manifest.json">
 <script>
-/* ธีมสี: ต้องรันก่อนโหลด style.css เพื่อไม่ให้จอสว่างวาบก่อนเปลี่ยนเป็นโหมดมืด */
+/* ธีมสี: ต้องรันก่อนโหลด style.css เพื่อไม่ให้จอสว่างวาบก่อนเปลี่ยนเป็นโหมดมืด
+   - ตามระบบ = ไม่ตั้ง data-theme (ให้ CSS @media prefers-color-scheme ตัดสินเอง)
+   - สว่าง/มืด = ตั้ง data-theme เป็น light / dark เพื่อบังคับ */
 (function(){
   var KEY="pcu-theme", root=document.documentElement;
   var mq=window.matchMedia?matchMedia("(prefers-color-scheme: dark)"):null;
   function getMode(){var m="auto";try{m=localStorage.getItem(KEY)||"auto"}catch(e){}return(m==="light"||m==="dark")?m:"auto"}
   function apply(m){
+    if(m==="auto")root.removeAttribute("data-theme");else root.setAttribute("data-theme",m);
     var dark=m==="dark"||(m==="auto"&&!!mq&&mq.matches);
-    root.setAttribute("data-theme",dark?"dark":"light");
+    var cs=document.querySelector('meta[name="color-scheme"]');
+    if(cs)cs.setAttribute("content",dark?"dark only":"light only"); /* "only" = ห้ามเบราว์เซอร์กลับสีซ้ำ */
     var tc=document.querySelector('meta[name="theme-color"]');
     if(tc)tc.setAttribute("content",dark?"#0c4a6e":"#0ea5e9");
     return dark;
@@ -33,7 +37,7 @@
     set:function(m){try{localStorage.setItem(KEY,m)}catch(e){}return apply(m)}
   };
   apply(getMode());
-  if(mq){ /* ถ้าเลือก "ตามระบบ" แล้วผู้ใช้สลับโหมดที่เครื่อง ให้เปลี่ยนตามทันที */
+  if(mq){ /* ถ้าเลือก "ตามระบบ" แล้วผู้ใช้สลับโหมดที่เครื่อง ให้อัปเดตสีแถบทันที */
     var f=function(){if(getMode()==="auto")apply("auto")};
     if(mq.addEventListener)mq.addEventListener("change",f);else if(mq.addListener)mq.addListener(f);
   }
