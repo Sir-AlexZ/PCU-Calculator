@@ -1,9 +1,4 @@
 /* ---------- PWA ---------- */
-const ICON="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230ea5e9'/%3E%3Ctext x='256' y='330' font-size='210' font-family='Arial' font-weight='bold' fill='white' text-anchor='middle'%3EPCU%3C/text%3E%3C/svg%3E";
-const mf={name:"PCU Calculator",short_name:"PCU Calc",start_url:"./",scope:"./",display:"standalone",orientation:"portrait",background_color:"#f1f5f9",theme_color:"#0ea5e9",
- icons:[{src:ICON,sizes:"192x192",type:"image/svg+xml",purpose:"any"},{src:ICON,sizes:"512x512",type:"image/svg+xml",purpose:"any maskable"}]};
-const ml=document.createElement("link");ml.rel="manifest";
-ml.href=URL.createObjectURL(new Blob([JSON.stringify(mf)],{type:"application/manifest+json"}));document.head.appendChild(ml);
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 
 /* ---------- helpers ---------- */
@@ -62,8 +57,8 @@ function calc(){
     setTag($("wcTag"), wcTxt, over ? "t-bad" : "t-ok");
   } else setTag($("wcTag"), "กรอกรอบเอว", "t-mut");
 
-  $("wcV").innerHTML=wc?`${wc.toFixed(1)} ซม. <small style="font-size:11px;color:#64748b">(${wcInch} นิ้ว)</small>`:"–";
-  $("hcV").innerHTML=hc?`${hc.toFixed(1)} ซม. <small style="font-size:11px;color:#64748b">(${hcInch} นิ้ว)</small>`:"–";
+  $("wcV").innerHTML=wc?`${wc.toFixed(1)} ซม. <small style="font-size:11px;color:var(--mut)">(${wcInch} นิ้ว)</small>`:"–";
+  $("hcV").innerHTML=hc?`${hc.toFixed(1)} ซม. <small style="font-size:11px;color:var(--mut)">(${hcInch} นิ้ว)</small>`:"–";
   $("whrV").textContent=whr?whr.toFixed(2):"–";
   let whrTxt="";
   if(!sexOK){
@@ -160,7 +155,7 @@ function calc(){
   const nm=$("name").value.trim()||"(ไม่ระบุชื่อ)",hn=$("hn").value.trim();
   const sexTxt = sex==="M"?"ชาย":sex==="F"?"หญิง":"ยังไม่ระบุเพศ";
   const smokeVal=$("smoke").value, dmVal=$("dm").value;
-  $("who").innerHTML=`<b style="color:#0f172a;font-size:15px">${nm}</b>${hn?" · HN "+hn:""} · ${sexTxt} ${age||"–"} ปี · วันที่ ${$("dt").value||"–"}`;
+  $("who").innerHTML=`<b style="color:var(--txt);font-size:15px">${nm}</b>${hn?" · HN "+hn:""} · ${sexTxt} ${age||"–"} ปี · วันที่ ${$("dt").value||"–"}`;
 
   R={name:nm,hn,date:$("dt").value,
      age:blank("age")?"":age,
@@ -257,7 +252,7 @@ function renderHist(){
   const f=a.filter(r=>!q||((r.name||"")+(r.hn||"")).toLowerCase().includes(q));
   $("cnt").textContent=a.length+" ราย";
   $("histList").innerHTML=f.length?f.map(r=>`<div class="hist">
-    <b>${r.name}</b> ${r.hn?`<span style="color:#64748b">· HN ${r.hn}</span>`:""}
+    <b>${r.name}</b> ${r.hn?`<span style="color:var(--mut)">· HN ${r.hn}</span>`:""}
     <div class="m">${r.ts} · ${r.sex||"ยังไม่ระบุเพศ"} ${r.age!==""&&r.age!=null?r.age+" ปี":"อายุ: ยังไม่ได้กรอก"}</div>
     <div class="chips">
       <span class="chip">BMI ${r.bmi!==""&&r.bmi!=null?r.bmi+` (${r.bmiTxt})`:"ยังไม่ได้กรอก"}</span>
@@ -273,7 +268,7 @@ function renderHist(){
       <button class="btn o" onclick="reuse(${r.id})">↩️ โหลดเข้าฟอร์ม</button>
       <button class="btn g" onclick="one(${r.id})">📗 Excel</button>
       <button class="btn r" onclick="del(${r.id})">🗑 ลบ</button>
-    </div></div>`).join(""):`<div class="card" style="text-align:center;color:#64748b">ยังไม่มีข้อมูล</div>`;
+    </div></div>`).join(""):`<div class="card" style="text-align:center;color:var(--mut)">ยังไม่มีข้อมูล</div>`;
 }
 function reuse(id){const r=load().find(x=>x.id===id);if(!r)return;
   $("name").value=r.name==="(ไม่ระบุชื่อ)"?"":r.name;$("hn").value=r.hn;$("age").value=r.age;
@@ -296,3 +291,20 @@ function clearForm(){if(!confirm("ล้างข้อมูลในฟอร�
   document.querySelectorAll("input").forEach(i=>{if(i.id!=="q")i.value=""});$("sex").value="";
   ["smoke","dm","fdm"].forEach(i=>$(i).value="");$("dt").valueAsDate=new Date();calc();toast("ล้างแล้ว")}
 renderHist();
+
+/* ---------- โหมดสี (สว่าง / มืด / ตามระบบ) ---------- */
+(function(){
+  if(!window.PCUTheme)return; // ตัวหลักอยู่ใน <head> ของ index.html
+  const btns=document.querySelectorAll(".theme button");
+  const NAME={auto:"ตามระบบ",light:"สว่าง",dark:"มืด"};
+  function sync(){
+    const m=PCUTheme.get();
+    btns.forEach(b=>{const on=b.dataset.m===m;b.classList.toggle("on",on);b.setAttribute("aria-pressed",on)});
+  }
+  btns.forEach(b=>b.addEventListener("click",()=>{
+    const m=b.dataset.m, dark=PCUTheme.set(m);
+    sync();
+    toast("โหมดสี: "+NAME[m]+(m==="auto"?" (ตอนนี้: "+(dark?"มืด":"สว่าง")+")":""));
+  }));
+  sync();
+})();

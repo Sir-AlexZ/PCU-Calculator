@@ -5,19 +5,67 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>PCU Calculator</title>
 <meta name="theme-color" content="#0ea5e9">
+<meta name="color-scheme" content="light dark">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="PCU Calc">
+<!-- ===== Favicon / App icons ===== -->
+<link rel="icon" type="image/png" sizes="96x96" href="favicon-96x96.png">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="icon" type="image/png" sizes="512x512" href="favicon-512.png">
-<link rel="alternate icon" href="favicon.ico">
+<link rel="shortcut icon" href="favicon.ico">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="apple-touch-icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="apple-touch-icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="apple-touch-icon-120.png">
+<link rel="mask-icon" href="safari-pinned-tab.svg" color="#0369a1">
+<meta name="msapplication-TileColor" content="#ffffff">
+<meta name="msapplication-TileImage" content="mstile-150x150.png">
+<meta name="msapplication-config" content="browserconfig.xml">
+<link rel="manifest" href="manifest.json">
+<script>
+/* ธีมสี: ต้องรันก่อนโหลด style.css เพื่อไม่ให้จอสว่างวาบก่อนเปลี่ยนเป็นโหมดมืด
+   - ตามระบบ = ไม่ตั้ง data-theme (ให้ CSS @media prefers-color-scheme ตัดสินเอง)
+   - สว่าง/มืด = ตั้ง data-theme เป็น light / dark เพื่อบังคับ */
+(function(){
+  var KEY="pcu-theme", root=document.documentElement;
+  var mq=window.matchMedia?matchMedia("(prefers-color-scheme: dark)"):null;
+  function getMode(){var m="auto";try{m=localStorage.getItem(KEY)||"auto"}catch(e){}return(m==="light"||m==="dark")?m:"auto"}
+  function apply(m){
+    if(m==="auto")root.removeAttribute("data-theme");else root.setAttribute("data-theme",m);
+    var dark=m==="dark"||(m==="auto"&&!!mq&&mq.matches);
+    var cs=document.querySelector('meta[name="color-scheme"]');
+    if(cs)cs.setAttribute("content",dark?"dark only":"light only"); /* "only" = ห้ามเบราว์เซอร์กลับสีซ้ำ */
+    var tc=document.querySelector('meta[name="theme-color"]');
+    if(tc)tc.setAttribute("content",dark?"#0c4a6e":"#0ea5e9");
+    return dark;
+  }
+  window.PCUTheme={
+    get:getMode,
+    set:function(m){try{localStorage.setItem(KEY,m)}catch(e){}return apply(m)}
+  };
+  apply(getMode());
+  if(mq){ /* ถ้าเลือก "ตามระบบ" แล้วผู้ใช้สลับโหมดที่เครื่อง ให้อัปเดตสีแถบทันที */
+    var f=function(){if(getMode()==="auto")apply("auto")};
+    if(mq.addEventListener)mq.addEventListener("change",f);else if(mq.addListener)mq.addListener(f);
+  }
+})();
+</script>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <header class="noprint">
-  <h1>🩺 PCU Calculator</h1>
-  <p>กรอกข้อมูลครั้งเดียว · คำนวณครบทุกสูตรอัตโนมัติ · ทำงานออฟไลน์</p>
+  <div class="hd">
+    <div>
+      <h1>🩺 PCU Calculator</h1>
+      <p>กรอกข้อมูลครั้งเดียว · คำนวณครบทุกสูตรอัตโนมัติ · ทำงานออฟไลน์</p>
+    </div>
+    <div class="theme" role="group" aria-label="โหมดสี">
+      <button type="button" data-m="auto" title="ตามระบบ" aria-label="ตามระบบ">🖥️</button>
+      <button type="button" data-m="light" title="สว่าง" aria-label="สว่าง">☀️</button>
+      <button type="button" data-m="dark" title="มืด" aria-label="มืด">🌙</button>
+    </div>
+  </div>
 </header>
 
 <nav class="noprint">
@@ -83,7 +131,7 @@
 
   <div class="card">
     <h3>1) ดัชนีมวลกาย (BMI)</h3>
-    <div class="res"><span class="k">BMI</span><span class="v"><span id="bmiV">–</span> <small style="font-size:12px;color:#64748b">kg/m²</small><br><span id="bmiT" class="tag t-mut">–</span></span></div>
+    <div class="res"><span class="k">BMI</span><span class="v"><span id="bmiV">–</span> <small style="font-size:12px;color:var(--mut)">kg/m²</small><br><span id="bmiT" class="tag t-mut">–</span></span></div>
     <div class="hint" id="bmiM"></div>
     <table id="bmiTb"></table>
   </div>
@@ -123,14 +171,14 @@
 
   <div class="card">
     <h3>6) ความเสี่ยงโรคเบาหวาน (DM Risk Score)</h3>
-    <div class="res"><span class="k">คะแนนรวม</span><span class="v"><span id="dmV">–</span> <small style="font-size:12px;color:#64748b">คะแนน</small><br><span id="dmT" class="tag t-mut">–</span></span></div>
+    <div class="res"><span class="k">คะแนนรวม</span><span class="v"><span id="dmV">–</span> <small style="font-size:12px;color:var(--mut)">คะแนน</small><br><span id="dmT" class="tag t-mut">–</span></span></div>
     <table id="dmTb"></table>
     <div class="hint">เกณฑ์: ≤2 เสี่ยงน้อย · 3–5 ปานกลาง · 6–8 สูง · &gt;8 สูงมาก</div>
   </div>
 
   <div class="card">
     <h3>7) ความเสี่ยงโรคหัวใจและหลอดเลือด (Thai CV Risk)</h3>
-    <div class="res"><span class="k">ความเสี่ยงใน 10 ปี</span><span class="v"><span id="cvV">–</span> <small style="font-size:12px;color:#64748b">%</small><br><span id="cvT" class="tag t-mut">–</span></span></div>
+    <div class="res"><span class="k">ความเสี่ยงใน 10 ปี</span><span class="v"><span id="cvV">–</span> <small style="font-size:12px;color:var(--mut)">%</small><br><span id="cvT" class="tag t-mut">–</span></span></div>
     <table><tr><th>ระดับความเสี่ยง</th><th>ค่า %</th></tr>
       <tr id="cv1"><td>ความเสี่ยงต่ำ</td><td>น้อยกว่า 10%</td></tr>
       <tr id="cv2"><td>ความเสี่ยงปานกลาง</td><td>10% – 19.9%</td></tr>

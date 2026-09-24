@@ -1,4 +1,4 @@
-const C="pcu-v3"; // ↑ เพิ่มเลขนี้ทุกครั้งที่แก้ style.css / script.js เพื่อบังคับล้างแคชเก่า
+const C="pcu-v7"; // ↑ เพิ่มเลขนี้ทุกครั้งที่แก้ style.css / script.js เพื่อบังคับล้างแคชเก่า
 const ASSETS=["./","./index.html","./style.css","./script.js"];
 
 self.addEventListener("install",e=>{
@@ -28,9 +28,9 @@ self.addEventListener("fetch",e=>{
     return;
   }
 
-  // ---- style.css / script.js : network-first เช่นกัน (กันโค้ดค้างเวอร์ชันเก่า) ----
+  // ---- style.css / script.js / manifest.json : network-first เช่นกัน (กันไฟล์ค้างเวอร์ชันเก่า) ----
   const url=new URL(req.url);
-  if(url.pathname.endsWith("style.css")||url.pathname.endsWith("script.js")){
+  if(url.pathname.endsWith("style.css")||url.pathname.endsWith("script.js")||url.pathname.endsWith("manifest.json")){
     e.respondWith(
       fetch(req).then(res=>{
         const cp=res.clone();
