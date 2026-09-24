@@ -237,8 +237,11 @@
   </div>
 
   <div class="card">
-    <div class="iw"><iframe id="cvFrame" src="https://www.rama.mahidol.ac.th/cardio_vascular_risk/thai_cv_risk_score/" referrerpolicy="no-referrer" allow="clipboard-write"></iframe></div>
-    <div class="hint" style="margin-top:8px">หน้านี้ต้องต่ออินเทอร์เน็ต · ส่วนอื่นของแอปใช้งานออฟไลน์ได้ปกติ</div>
+    <!-- ช่องแจ้งสถานะ: script.js จะแสดงเมื่อออฟไลน์ หรือเว็บรามาโหลดนานผิดปกติ -->
+    <div id="cvStatus" class="note hidden" role="status" style="margin-bottom:10px"></div>
+    <!-- data-src (ไม่ใช่ src) = ยังไม่โหลดจนกว่าผู้ใช้จะเข้าแท็บนี้ ดู mountCV() ใน script.js -->
+    <div class="iw"><iframe id="cvFrame" data-src="https://www.rama.mahidol.ac.th/cardio_vascular_risk/thai_cv_risk_score/" title="Thai CV Risk Score — รามาธิบดี" referrerpolicy="no-referrer" allow="clipboard-write"></iframe></div>
+    <div class="hint" style="margin-top:8px">กรอบด้านบนคือเว็บของโรงพยาบาลรามาธิบดี ต้องต่ออินเทอร์เน็ต · ถ้าว่างเปล่าหรือหมุนค้าง แปลว่าเว็บต้นทางขัดข้องชั่วคราว ไม่ใช่แอปนี้เสีย · ส่วนอื่นของแอปใช้งานออฟไลน์ได้ปกติ</div>
   </div>
 </section>
 
