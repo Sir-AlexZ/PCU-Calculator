@@ -5,7 +5,7 @@ if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(
 const $=id=>document.getElementById(id), n=id=>parseFloat($(id).value)||0;
 function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),1900)}
 function go(t){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
- ["in","out","cv","his"].forEach(s=>$(s).classList.toggle("hidden",s!==t));window.scrollTo(0,0);if(t==="his")renderHist();if(t==="cv")chips()}
+ ["in","out","cv","his"].forEach(s=>$(s).classList.toggle("hidden",s!==t));window.scrollTo(0,0);if(t==="his")renderHist();if(t==="cv"){mountCV();chips()}}
 document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.t));
 function setTag(el,txt,cls){if(el){el.textContent=txt;el.className="tag "+cls}}
 
@@ -182,7 +182,42 @@ function chips(){
   $("cvChips").innerHTML=c.map(x=>`<span class="chip" onclick="cp('${x[1]}')">${x[0]}: <b>${x[1]}</b> 📋</span>`).join("");
 }
 function cp(v){navigator.clipboard?.writeText(v).then(()=>toast("คัดลอก "+v+" แล้ว")).catch(()=>toast("คัดลอกไม่ได้"))}
-function reloadCV(){$("cvFrame").src=$("cvFrame").src}
+/* ---------- CV: โหลด iframe เฉพาะตอนเข้าแท็บนี้ ---------- */
+/* เดิม iframe มี src ตั้งแต่แรก ทำให้ทุกครั้งที่เปิดแอปต้องไปดึงเว็บรามามาด้วย
+   ถ้าเว็บรามาช้าหรือล่ม แอปทั้งตัวจะพลอยหมุนค้างตาม จึงเปลี่ยนมาโหลดเมื่อจำเป็นเท่านั้น */
+const CV_WAIT=12000;              // ถือว่า "ช้าผิดปกติ" ถ้าเกินกี่มิลลิวินาที
+let cvTimer=null;
+function cvMsg(html){             // html ว่าง = ซ่อนกล่องแจ้งสถานะ
+  const s=$("cvStatus"); if(!s)return;
+  s.innerHTML=html||""; s.classList.toggle("hidden",!html);
+}
+function mountCV(){
+  const f=$("cvFrame"); if(!f)return;
+  if(f.getAttribute("src"))return;                       // โหลดไปแล้ว ไม่ต้องโหลดซ้ำ
+  if(navigator.onLine===false){                          // ออฟไลน์ก็ไม่ต้องเสียเวลาลอง
+    cvMsg("📴 ตอนนี้ไม่ได้ต่ออินเทอร์เน็ต — หน้าเครื่องคำนวณของรามาจึงโหลดไม่ได้<br>ส่วนอื่นของแอปยังใช้ได้ตามปกติ · เมื่อต่อเน็ตแล้วกด 🔄 โหลดใหม่");
+    return;
+  }
+  cvMsg("⏳ กำลังโหลดเว็บของรามาธิบดี…");
+  cvTimer=setTimeout(()=>cvMsg(
+    "⚠️ เว็บของรามาธิบดีใช้เวลานานผิดปกติ หรืออาจขัดข้องอยู่ (เคยพบรหัส 504 Gateway Time-out)<br>"+
+    "<b>เป็นปัญหาที่ฝั่งเว็บต้นทาง ไม่ใช่แอปนี้เสีย</b> — ค่าที่กรอกไว้ยังอยู่ครบ<br>"+
+    "ทางเลือก: กด 🔄 โหลดใหม่ · กด 🔗 เปิดในเบราว์เซอร์ · หรือคำนวณจากที่อื่นแล้วกรอก %CV Risk ในช่องด้านบนได้เลย"
+  ),CV_WAIT);
+  f.addEventListener("load",()=>{clearTimeout(cvTimer);cvMsg("")},{once:true});
+  f.src=f.dataset.src;
+}
+function reloadCV(){
+  const f=$("cvFrame"); if(!f)return;
+  clearTimeout(cvTimer);
+  if(!f.getAttribute("src")){mountCV();return}             // ยังไม่เคยโหลด = โหลดครั้งแรก
+  cvMsg("⏳ กำลังโหลดเว็บของรามาธิบดี…");
+  cvTimer=setTimeout(()=>cvMsg(
+    "⚠️ ยังโหลดไม่ขึ้น — เว็บต้นทางน่าจะขัดข้องอยู่ ลองใหม่อีกครั้งภายหลัง หรือกด 🔗 เปิดในเบราว์เซอร์"
+  ),CV_WAIT);
+  f.addEventListener("load",()=>{clearTimeout(cvTimer);cvMsg("")},{once:true});
+  f.src=f.dataset.src;                                     // ตั้งจาก data-src เสมอ กันค่าเพี้ยนหลัง redirect
+}
 function openCV(){window.open(CV_URL,"_blank")}
 async function pasteCV(){
   try{
