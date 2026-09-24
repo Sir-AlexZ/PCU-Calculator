@@ -1,4 +1,4 @@
-const C="pcu-v6"; // ↑ เพิ่มเลขนี้ทุกครั้งที่แก้ style.css / script.js เพื่อบังคับล้างแคชเก่า
+const C="pcu-v7"; // ↑ เพิ่มเลขนี้ทุกครั้งที่แก้ style.css / script.js เพื่อบังคับล้างแคชเก่า
 const ASSETS=["./","./index.html","./style.css","./script.js"];
 
 self.addEventListener("install",e=>{
