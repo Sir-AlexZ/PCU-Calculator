@@ -308,3 +308,16 @@ renderHist();
   }));
   sync();
 })();
+
+/* ---------- คำแนะนำสำหรับ Samsung Internet (แสดงครั้งเดียว ปิดแล้วไม่แสดงอีก) ---------- */
+(function(){
+  const box=document.getElementById("sbTip"); if(!box)return;
+  const isSamsung=/SamsungBrowser/i.test(navigator.userAgent);
+  const installed=(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
+  let closed=false; try{closed=localStorage.getItem("pcu-sbtip")==="1"}catch(e){}
+  if(isSamsung&&!installed&&!closed)box.classList.remove("hidden");
+  document.getElementById("sbTipClose").addEventListener("click",()=>{
+    box.classList.add("hidden");
+    try{localStorage.setItem("pcu-sbtip","1")}catch(e){}
+  });
+})();
