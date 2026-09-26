@@ -76,6 +76,36 @@
 </nav>
 
 <main>
+<!-- แถบแดงเมื่อบันทึก/ลบไม่สำเร็จ — ค้างอยู่จนกว่าจะกด ✕ (ไม่หายเองแบบ toast) -->
+<div id="saveErr" class="alert noprint hidden" role="alert">
+  <div>
+    <b id="saveErrTitle">⛔ บันทึกไม่สำเร็จ</b><br>
+    <span id="saveErrBody"></span><br>
+    <small id="saveErrWhy"></small>
+  </div>
+  <button type="button" id="saveErrClose" aria-label="ปิดข้อความเตือน">✕</button>
+</div>
+
+<!-- คำแนะนำสำหรับ Safari บน iPhone/iPad ที่ยังไม่ได้ติดตั้งเป็นแอป -->
+<div id="iosTip" class="note tip noprint hidden" role="note">
+  <div>
+    <b>💡 ใช้ Safari บน iPhone/iPad อยู่ — แนะนำให้ติดตั้งเป็นแอปก่อนเริ่มกรอก</b><br>
+    • <b>วิธีติดตั้ง:</b> แตะปุ่มแชร์ (สี่เหลี่ยมมีลูกศรชี้ขึ้น) → "เพิ่มไปยังหน้าจอโฮม" แล้วเปิดจากไอคอนนั้นทุกครั้ง<br>
+    • <b>เหตุผล:</b> Safari อาจลบข้อมูลของเว็บที่ไม่ได้เปิดใช้หลายวันทิ้งอัตโนมัติ และประวัติที่บันทึกใน Safari <b>จะไม่ย้ายตามไป</b>ในแอปที่ติดตั้ง เพราะเป็นข้อมูลคนละชุดกัน
+  </div>
+  <button type="button" id="iosTipClose" aria-label="ปิดคำแนะนำ">✕</button>
+</div>
+
+<!-- คำเตือนเมื่อเปิดในเบราว์เซอร์ของ LINE (ทั้ง iPhone และ Android) -->
+<div id="lineTip" class="note tip noprint hidden" role="note">
+  <div>
+    <b>⚠️ กำลังเปิดในเบราว์เซอร์ของ LINE</b><br>
+    ข้อมูลที่บันทึกตรงนี้จะอยู่ใน LINE เท่านั้น — ถ้าภายหลังเปิดด้วย Safari หรือ Chrome <b>จะไม่เห็นประวัติชุดนี้</b><br>
+    • <b>แนะนำ:</b> แตะเมนูของ LINE (⋯ หรือ ⋮) แล้วเลือกเปิดด้วยเบราว์เซอร์ — iPhone/iPad ใช้ <b>Safari</b> · Android ใช้ <b>Chrome</b> — หรือติดตั้งเป็นแอปจากเบราว์เซอร์นั้นเลย
+  </div>
+  <button type="button" id="lineTipClose" aria-label="ปิดคำเตือน">✕</button>
+</div>
+
 <!-- คำแนะนำสำหรับผู้ใช้ Samsung Internet (script.js จะแสดงเฉพาะเมื่อเปิดด้วย Samsung Internet) -->
 <div id="sbTip" class="note tip noprint hidden" role="note">
   <div>
@@ -255,6 +285,16 @@
       <button class="btn r" onclick="wipe()">🗑 ลบทั้งหมด</button>
     </div>
     <input id="q" placeholder="🔍 ค้นหาชื่อ / HN" style="margin-top:10px" oninput="renderHist()">
+    <!-- แผงลับสำหรับผู้ดูแลแอป: แตะป้ายจำนวนราย (0 ราย) ติดกัน 5 ครั้งเพื่อเปิด/ปิด -->
+    <div id="logPanel" class="logbox noprint hidden">
+      <b>🛠 บันทึกกิจกรรม (สำหรับผู้ดูแลแอป)</b>
+      <div class="hint" id="logSum"></div>
+      <div class="row" style="margin-top:8px">
+        <button type="button" class="btn o" id="logExport">📤 ส่งออก log</button>
+        <button type="button" class="btn d" id="logClear">🧽 ล้าง log</button>
+      </div>
+      <pre id="logView"></pre>
+    </div>
   </div>
   <div id="histList"></div>
 </section>

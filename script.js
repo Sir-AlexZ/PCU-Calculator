@@ -1,8 +1,29 @@
+/* ---------- บันทึกกิจกรรม (activity log) ----------
+   ต้องอยู่บนสุดของไฟล์ เพื่อให้ดักจับ error ได้ตั้งแต่วินาทีแรก
+   เก็บแค่ "เกิดอะไรขึ้น เมื่อไหร่ ตอนนั้นมีกี่ราย" — ห้ามเก็บค่าที่กรอก (ชื่อ HN ตัวเลขวัด) เด็ดขาด
+   เปิดดูได้โดยแตะป้าย "0 ราย" ในแท็บประวัติติดกัน 5 ครั้ง */
+const LOG_KEY="pcu_log_v1", LOG_MAX=200;
+function logEvt(type,msg){
+  try{
+    let a; try{a=JSON.parse(localStorage.getItem(LOG_KEY))}catch(e){}
+    if(!Array.isArray(a))a=[];
+    a.push({t:new Date().toISOString(),type,msg:String(msg??"").slice(0,300)});
+    if(a.length>LOG_MAX)a=a.slice(-LOG_MAX);        // เก็บเฉพาะล่าสุด วนทับของเก่า
+    localStorage.setItem(LOG_KEY,JSON.stringify(a));
+  }catch(e){}                                      // ตัว log เองห้ามทำให้แอปพัง
+}
+function readLog(){try{const a=JSON.parse(localStorage.getItem(LOG_KEY));return Array.isArray(a)?a:[]}catch(e){return[]}}
+window.addEventListener("error",e=>logEvt("error",`${e.message||"unknown"} @ ${(e.filename||"").split("/").pop()||"?"}:${e.lineno||0}:${e.colno||0}`));
+window.addEventListener("unhandledrejection",e=>{const r=e.reason;logEvt("error","Promise: "+(r&&r.message?r.message:String(r)))});
+
 /* ---------- PWA ---------- */
-if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(e=>logEvt("error","ลงทะเบียน Service Worker ไม่สำเร็จ: "+(e&&e.message)));
 
 /* ---------- helpers ---------- */
 const $=id=>document.getElementById(id), n=id=>parseFloat($(id).value)||0;
+/* แปลงอักขระพิเศษเป็นข้อความธรรมดา ก่อนเอาค่าที่ผู้ใช้พิมพ์ไปต่อเป็น HTML
+   (กันกรณีพิมพ์ < > " ' & ลงช่องชื่อ/HN แล้วหน้าประวัติเพี้ยนหรือหาย) */
+const esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");setTimeout(()=>t.classList.remove("on"),1900)}
 function go(t){document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
  ["in","out","cv","his"].forEach(s=>$(s).classList.toggle("hidden",s!==t));window.scrollTo(0,0);if(t==="his")renderHist();if(t==="cv"){mountCV();chips()}}
@@ -155,7 +176,7 @@ function calc(){
   const nm=$("name").value.trim()||"(ไม่ระบุชื่อ)",hn=$("hn").value.trim();
   const sexTxt = sex==="M"?"ชาย":sex==="F"?"หญิง":"ยังไม่ระบุเพศ";
   const smokeVal=$("smoke").value, dmVal=$("dm").value;
-  $("who").innerHTML=`<b style="color:var(--txt);font-size:15px">${nm}</b>${hn?" · HN "+hn:""} · ${sexTxt} ${age||"–"} ปี · วันที่ ${$("dt").value||"–"}`;
+  $("who").innerHTML=`<b style="color:var(--txt);font-size:15px">${esc(nm)}</b>${hn?" · HN "+esc(hn):""} · ${sexTxt} ${age||"–"} ปี · วันที่ ${esc($("dt").value)||"–"}`;
 
   R={name:nm,hn,date:$("dt").value,
      age:blank("age")?"":age,
@@ -179,8 +200,15 @@ const CV_URL="https://www.rama.mahidol.ac.th/cardio_vascular_risk/thai_cv_risk_s
 function chips(){
   const c=[["อายุ",R.age||"–"],["เพศ",R.sex||"–"],["SBP",R.sbp||"–"],["รอบเอว (นิ้ว)",R.wc ? (R.wc / 2.54).toFixed(1) : "–"],
            ["ส่วนสูง (ซม.)",R.ht||"–"],["สูบบุหรี่",R.smoke||"–"],["เบาหวาน",R.dm||"–"]];
-  $("cvChips").innerHTML=c.map(x=>`<span class="chip" onclick="cp('${x[1]}')">${x[0]}: <b>${x[1]}</b> 📋</span>`).join("");
+  /* เก็บค่าไว้ใน data-v แทนการฝังลงใน onclick="cp('...')"
+     ค่าจะเป็นแค่ข้อความ ไม่มีวันถูกตีความเป็นโค้ด ต่อให้มีเครื่องหมาย ' หรือ " ติดมา */
+  $("cvChips").innerHTML=c.map(x=>`<span class="chip" data-v="${esc(x[1])}">${esc(x[0])}: <b>${esc(x[1])}</b> 📋</span>`).join("");
 }
+/* ดักคลิกที่กล่องแม่ครั้งเดียว แล้วหยิบค่าจากชิปที่ถูกแตะ (ไม่ต้องสร้างตัวดักใหม่ทุกครั้งที่คำนวณ) */
+$("cvChips").addEventListener("click",e=>{
+  const el=e.target.closest(".chip[data-v]");
+  if(el)cp(el.dataset.v);
+});
 function cp(v){navigator.clipboard?.writeText(v).then(()=>toast("คัดลอก "+v+" แล้ว")).catch(()=>toast("คัดลอกไม่ได้"))}
 /* ---------- CV: โหลด iframe เฉพาะตอนเข้าแท็บนี้ ---------- */
 /* เดิม iframe มี src ตั้งแต่แรก ทำให้ทุกครั้งที่เปิดแอปต้องไปดึงเว็บรามามาด้วย
@@ -276,34 +304,74 @@ function histExcel() {
 /* ---------- HISTORY ---------- */
 const KEY="pcu_history_v1";
 const load=()=>{try{return JSON.parse(localStorage.getItem(KEY))||[]}catch(e){return[]}};
-const save=a=>localStorage.setItem(KEY,JSON.stringify(a));
+/* เขียนแล้วอ่านกลับมาเทียบทันที — ถ้าไม่ตรงหรือเขียนไม่ได้ จะโยน error ออกไปให้คนเรียกจัดการ
+   (เดิมไม่มีการตรวจ ถ้าพื้นที่เต็มหรือเบราว์เซอร์ไม่ยอมให้เขียน ปุ่มจะเงียบไปเฉย ๆ โดยไม่มีใครรู้) */
+function save(a){
+  const s=JSON.stringify(a);
+  localStorage.setItem(KEY,s);
+  if(localStorage.getItem(KEY)!==s){const e=new Error("อ่านกลับมาแล้วไม่ตรงกับที่เขียน");e.name="VerifyError";throw e}
+}
+/* แปลสาเหตุเป็นภาษาคน */
+function whyFail(e){
+  const n=e&&e.name||"";
+  if(n==="QuotaExceededError"||n==="NS_ERROR_DOM_QUOTA_REACHED"||(e&&(e.code===22||e.code===1014)))
+    return "พื้นที่เก็บข้อมูลของเบราว์เซอร์เต็ม — ส่งออก Excel เก็บไว้ก่อน แล้วลบประวัติเก่าที่ลงข้อมูลหลักไปแล้วออก";
+  if(n==="SecurityError")
+    return "เบราว์เซอร์ไม่อนุญาตให้เก็บข้อมูล (เช่น เปิดในโหมดส่วนตัว หรือปิดการเก็บข้อมูลเว็บไซต์ไว้)";
+  if(n==="VerifyError")
+    return "บันทึกแล้วตรวจสอบไม่ผ่าน ข้อมูลที่อ่านกลับมาไม่ตรงกับที่เขียน";
+  return "ข้อผิดพลาดที่ไม่รู้จัก: "+(n||"")+" "+(e&&e.message||"");
+}
+/* แถบแดงค้างบนจอ — ไม่หายเองเหมือน toast ต้องกด ✕ เท่านั้น */
+function showSaveError(title,e,body){
+  $("saveErrTitle").textContent=title;
+  $("saveErrBody").textContent=body||"ลองกดอีกครั้ง ถ้ายังไม่ได้ให้แจ้งผู้ดูแลแอป";
+  $("saveErrWhy").textContent="สาเหตุ: "+whyFail(e);
+  $("saveErr").classList.remove("hidden");
+  window.scrollTo(0,0);
+}
+function hideSaveError(){$("saveErr").classList.add("hidden")}
+$("saveErrClose").addEventListener("click",hideSaveError);
+
 function saveRec(){
   calc();
   const a=load();a.unshift({...R,id:Date.now(),ts:new Date().toLocaleString("th-TH")});
-  save(a);toast("บันทึกลงเครื่องแล้ว ✓");renderHist();
+  try{save(a)}
+  catch(e){
+    logEvt("save_fail",e.name+": "+whyFail(e)+" · ในเครื่องมี "+(a.length-1)+" ราย");
+    showSaveError("⛔ บันทึกไม่สำเร็จ — ข้อมูลรายนี้ยังไม่ถูกเก็บในเครื่อง",e,
+      "กรุณาจดค่าลงกระดาษทันทีก่อนปิดหน้านี้ · ค่าที่กรอกยังอยู่ในฟอร์ม ไม่ได้หายไป");
+    return;
+  }
+  hideSaveError();
+  logEvt("save_ok","รวม "+a.length+" ราย");
+  toast("บันทึกลงเครื่องแล้ว ✓ (รวม "+a.length+" ราย)");renderHist();
 }
 function renderHist(){
   const a=load(),q=($("q")?.value||"").toLowerCase();
   const f=a.filter(r=>!q||((r.name||"")+(r.hn||"")).toLowerCase().includes(q));
+  const has=v=>v!==""&&v!=null;
   $("cnt").textContent=a.length+" ราย";
-  $("histList").innerHTML=f.length?f.map(r=>`<div class="hist">
-    <b>${r.name}</b> ${r.hn?`<span style="color:var(--mut)">· HN ${r.hn}</span>`:""}
-    <div class="m">${r.ts} · ${r.sex||"ยังไม่ระบุเพศ"} ${r.age!==""&&r.age!=null?r.age+" ปี":"อายุ: ยังไม่ได้กรอก"}</div>
+  /* ทุกค่าที่มาจากข้อมูลที่บันทึกไว้ผ่าน esc() ก่อนต่อเป็น HTML
+     id ผ่าน Number() เพราะไปอยู่ใน onclick — ถ้าไม่ใช่ตัวเลขจะกลายเป็น NaN ไม่ใช่โค้ดแปลกปลอม */
+  $("histList").innerHTML=f.length?f.map(r=>{const id=Number(r.id);return `<div class="hist">
+    <b>${esc(r.name)}</b> ${r.hn?`<span style="color:var(--mut)">· HN ${esc(r.hn)}</span>`:""}
+    <div class="m">${esc(r.ts)} · ${esc(r.sex||"ยังไม่ระบุเพศ")} ${has(r.age)?esc(r.age)+" ปี":"อายุ: ยังไม่ได้กรอก"}</div>
     <div class="chips">
-      <span class="chip">BMI ${r.bmi!==""&&r.bmi!=null?r.bmi+` (${r.bmiTxt})`:"ยังไม่ได้กรอก"}</span>
-      <span class="chip">WHR ${r.whr!==""&&r.whr!=null?r.whr:"ยังไม่ได้กรอก"}</span>
-      <span class="chip">OSTA ${r.osta!==""&&r.osta!=null?r.osta+` (${r.ostaTxt})`:"ยังไม่ได้กรอก"}</span>
-      <span class="chip">BP ${(r.sbp!==""&&r.sbp!=null&&r.dbp!==""&&r.dbp!=null)?`${r.sbp}/${r.dbp} ${r.htCat}`:"ยังไม่ได้กรอก"}</span>
-      <span class="chip">DM ${r.dmScore!==""&&r.dmScore!=null?r.dmScore+` คะแนน (${r.dmTxt})`:"ยังไม่ได้กรอกครบ"}</span>
-      <span class="chip">Grip R ${r.gripR!==""&&r.gripR!=null?r.gripR:"–"} / L ${r.gripL!==""&&r.gripL!=null?r.gripL:"–"}</span>
-      <span class="chip">รอบเอว ${r.wc!==""&&r.wc!=null?`${r.wc} ซม. (${r.wcInch||"–"} นิ้ว) ${r.wcTxt||""}`:"ยังไม่ได้กรอก"}</span>
-      ${(r.cvRisk!==""&&r.cvRisk!=null)?`<span class="chip">CV Risk ${r.cvRisk}% (${r.cvTxt})</span>`:""}
+      <span class="chip">BMI ${has(r.bmi)?esc(r.bmi)+` (${esc(r.bmiTxt)})`:"ยังไม่ได้กรอก"}</span>
+      <span class="chip">WHR ${has(r.whr)?esc(r.whr):"ยังไม่ได้กรอก"}</span>
+      <span class="chip">OSTA ${has(r.osta)?esc(r.osta)+` (${esc(r.ostaTxt)})`:"ยังไม่ได้กรอก"}</span>
+      <span class="chip">BP ${(has(r.sbp)&&has(r.dbp))?`${esc(r.sbp)}/${esc(r.dbp)} ${esc(r.htCat)}`:"ยังไม่ได้กรอก"}</span>
+      <span class="chip">DM ${has(r.dmScore)?esc(r.dmScore)+` คะแนน (${esc(r.dmTxt)})`:"ยังไม่ได้กรอกครบ"}</span>
+      <span class="chip">Grip R ${has(r.gripR)?esc(r.gripR):"–"} / L ${has(r.gripL)?esc(r.gripL):"–"}</span>
+      <span class="chip">รอบเอว ${has(r.wc)?`${esc(r.wc)} ซม. (${esc(r.wcInch||"–")} นิ้ว) ${esc(r.wcTxt)}`:"ยังไม่ได้กรอก"}</span>
+      ${has(r.cvRisk)?`<span class="chip">CV Risk ${esc(r.cvRisk)}% (${esc(r.cvTxt)})</span>`:""}
     </div>
     <div class="row">
-      <button class="btn o" onclick="reuse(${r.id})">↩️ โหลดเข้าฟอร์ม</button>
-      <button class="btn g" onclick="one(${r.id})">📗 Excel</button>
-      <button class="btn r" onclick="del(${r.id})">🗑 ลบ</button>
-    </div></div>`).join(""):`<div class="card" style="text-align:center;color:var(--mut)">ยังไม่มีข้อมูล</div>`;
+      <button class="btn o" onclick="reuse(${id})">↩️ โหลดเข้าฟอร์ม</button>
+      <button class="btn g" onclick="one(${id})">📗 Excel</button>
+      <button class="btn r" onclick="del(${id})">🗑 ลบ</button>
+    </div></div>`}).join(""):`<div class="card" style="text-align:center;color:var(--mut)">ยังไม่มีข้อมูล</div>`;
 }
 function reuse(id){const r=load().find(x=>x.id===id);if(!r)return;
   $("name").value=r.name==="(ไม่ระบุชื่อ)"?"":r.name;$("hn").value=r.hn;$("age").value=r.age;
@@ -320,11 +388,22 @@ function one(id){
   dl(csvBlob([r]), `PCU_${r.name}_${r.date||""}.csv`);
   toast("บันทึกแล้ว");
 }
-function del(id){if(!confirm("ลบรายการนี้?"))return;save(load().filter(x=>x.id!==id));renderHist();toast("ลบแล้ว")}
-function wipe(){if(!confirm("ลบประวัติทั้งหมดถาวร?"))return;save([]);renderHist();toast("ลบทั้งหมดแล้ว")}
+function del(id){if(!confirm("ลบรายการนี้?"))return;
+  const before=load(), after=before.filter(x=>x.id!==id);
+  try{save(after)}catch(e){logEvt("del_fail",e.name+" · ยังมี "+before.length+" ราย");showSaveError("⛔ ลบไม่สำเร็จ — รายการยังอยู่ในเครื่อง",e);return}
+  logEvt("del","ลบ 1 ราย · เหลือ "+after.length+" ราย");
+  renderHist();toast("ลบแล้ว")}
+function wipe(){
+  const n=load().length;
+  if(!confirm("ลบประวัติทั้งหมด "+n+" รายการถาวร?\nถ้ายังไม่ได้ลงข้อมูลหลัก ให้กดยกเลิกก่อน"))return;
+  try{save([])}catch(e){logEvt("wipe_fail",e.name+" · ยังมี "+n+" ราย");showSaveError("⛔ ลบทั้งหมดไม่สำเร็จ — ข้อมูลยังอยู่ในเครื่อง",e);return}
+  logEvt("wipe","ลบทั้งหมด "+n+" ราย");
+  renderHist();toast("ลบทั้งหมดแล้ว")}
 function clearForm(){if(!confirm("ล้างข้อมูลในฟอร์ม?"))return;
   document.querySelectorAll("input").forEach(i=>{if(i.id!=="q")i.value=""});$("sex").value="";
-  ["smoke","dm","fdm"].forEach(i=>$(i).value="");$("dt").valueAsDate=new Date();calc();toast("ล้างแล้ว")}
+  ["smoke","dm","fdm"].forEach(i=>$(i).value="");$("dt").valueAsDate=new Date();calc();
+  logEvt("clear_form","ล้างฟอร์ม (ไม่กระทบประวัติที่บันทึกไว้ · ในเครื่องมี "+load().length+" ราย)");
+  toast("ล้างแล้ว")}
 renderHist();
 
 /* ---------- โหมดสี (สว่าง / มืด / ตามระบบ) ---------- */
@@ -355,4 +434,89 @@ renderHist();
     box.classList.add("hidden");
     try{localStorage.setItem("pcu-sbtip","1")}catch(e){}
   });
+})();
+
+/* ---------- ตรวจว่าเปิดด้วยอะไร (ใช้ทั้งกล่องเตือนและ log) ---------- */
+const ENV=(function(){
+  const u=navigator.userAgent;
+  const iOS=/iP(hone|ad|od)/.test(u)||(/Macintosh/.test(u)&&navigator.maxTouchPoints>1); // iPad รุ่นใหม่แสดงตัวเป็น Mac
+  const android=/Android/.test(u);
+  const line=/ Line\/\d/.test(u);                         // เบราว์เซอร์ในตัวของ LINE ทั้ง iOS และ Android
+  const inApp=line||/FBAN|FBAV|Instagram/.test(u);
+  const standalone=(window.matchMedia&&matchMedia("(display-mode: standalone)").matches)||navigator.standalone===true;
+  // Safari แท้บน iPhone/iPad: มี Version/…Safari และไม่ใช่ Chrome/Firefox/Edge/Opera/Google app/แอปอื่นที่ห่อเว็บไว้
+  const iosSafari=iOS&&/Version\/[\d.]+.*Safari/.test(u)&&!/CriOS|FxiOS|EdgiOS|OPiOS|GSA\/|YaBrowser/.test(u)&&!inApp;
+  let browser="อื่น ๆ";
+  if(line)browser="LINE (เบราว์เซอร์ในแอป)";
+  else if(/FBAN|FBAV|Instagram/.test(u))browser="Facebook/IG (เบราว์เซอร์ในแอป)";
+  else if(/SamsungBrowser/.test(u))browser="Samsung Internet";
+  else if(/EdgA?\/|EdgiOS/.test(u))browser="Edge";
+  else if(/CriOS/.test(u))browser="Chrome";
+  else if(/FxiOS|Firefox\//.test(u))browser="Firefox";
+  else if(/Chrome\//.test(u))browser="Chrome";
+  else if(/Safari\//.test(u))browser="Safari";
+  const os=iOS?"iOS/iPadOS":android?"Android":/Windows/.test(u)?"Windows":/Macintosh/.test(u)?"macOS":"อื่น ๆ";
+  return {iOS,android,line,inApp,standalone,iosSafari,browser,os};
+})();
+
+/* กล่องคำแนะนำแบบปิดแล้วไม่แสดงอีก — ใช้ร่วมกันทุกกล่อง */
+function tipOnce(boxId,closeId,flag,show){
+  const box=$(boxId); if(!box)return;
+  let closed=false; try{closed=localStorage.getItem(flag)==="1"}catch(e){}
+  if(show&&!closed)box.classList.remove("hidden");
+  $(closeId).addEventListener("click",()=>{box.classList.add("hidden");try{localStorage.setItem(flag,"1")}catch(e){}});
+}
+/* Safari บน iPhone/iPad ที่ยังไม่ได้ติดตั้งเป็นแอป */
+tipOnce("iosTip","iosTipClose","pcu-iostip",ENV.iosSafari&&!ENV.standalone);
+/* เปิดอยู่ในเบราว์เซอร์ของ LINE */
+tipOnce("lineTip","lineTipClose","pcu-linetip",ENV.line);
+
+/* ---------- แผง log ลับ: แตะป้าย "0 ราย" ติดกัน 5 ครั้งภายใน 2 วินาที ---------- */
+(function(){
+  const badge=$("cnt"), panel=$("logPanel"); if(!badge||!panel)return;
+  let taps=0, timer=null;
+  badge.addEventListener("click",()=>{
+    taps++; clearTimeout(timer); timer=setTimeout(()=>taps=0,2000);
+    if(taps>=5){taps=0; panel.classList.toggle("hidden"); if(!panel.classList.contains("hidden"))showLog()}
+  });
+  const pad=n=>String(n).padStart(2,"0");
+  const fmt=iso=>{const d=new Date(iso);return isNaN(d)?iso:`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`};
+  const line=x=>`${fmt(x.t)} | ${x.type} | ${x.msg}`;
+  function showLog(){
+    const a=readLog();
+    $("logSum").textContent=`มี ${a.length} รายการ (เก็บล่าสุดไม่เกิน ${LOG_MAX}) · แสดง 30 รายการล่าสุด`;
+    $("logView").textContent=a.slice(-30).reverse().map(line).join("\n")||"(ยังไม่มีบันทึก)";   // textContent = แสดงเป็นข้อความล้วน
+  }
+  $("logExport").addEventListener("click",()=>{
+    const a=readLog();
+    const head=[
+      "PCU Calculator — บันทึกกิจกรรม",
+      "ส่งออกเมื่อ: "+fmt(new Date().toISOString()),
+      "เบราว์เซอร์: "+ENV.browser+" · ระบบ: "+ENV.os+" · ติดตั้งเป็นแอป: "+(ENV.standalone?"ใช่":"ไม่ใช่"),
+      "ประวัติในเครื่องตอนนี้: "+load().length+" ราย",
+      "User-Agent: "+navigator.userAgent,
+      "(ไฟล์นี้ไม่มีชื่อ HN หรือค่าที่วัดของผู้รับบริการ)",
+      "----------------------------------------"
+    ];
+    dl(new Blob(["﻿"+head.concat(a.map(line)).join("\r\n")],{type:"text/plain;charset=utf-8"}),
+       `PCU_log_${fmt(new Date().toISOString()).replace(/[: ]/g,"-")}.txt`);
+    toast("ส่งออก log "+a.length+" รายการแล้ว");
+  });
+  $("logClear").addEventListener("click",()=>{
+    if(!confirm("ล้าง log ทั้งหมด? (ไม่กระทบประวัติผู้รับบริการ)"))return;
+    try{localStorage.removeItem(LOG_KEY)}catch(e){}
+    logEvt("log_clear","ล้าง log");
+    showLog(); toast("ล้าง log แล้ว");
+  });
+})();
+
+/* ---------- บันทึกตอนเปิดแอป ---------- */
+(function(){
+  let storage="ใช้ได้";
+  try{const k="pcu-probe";localStorage.setItem(k,"1");if(localStorage.getItem(k)!=="1")storage="อ่านกลับไม่ตรง";localStorage.removeItem(k)}
+  catch(e){storage="ใช้ไม่ได้ ("+e.name+")"}
+  const base=`${ENV.browser} · ${ENV.os} · ${ENV.standalone?"ติดตั้งเป็นแอป":"เปิดในเบราว์เซอร์"} · ที่เก็บข้อมูล${storage} · ประวัติ ${load().length} ราย`;
+  // ดึงเวอร์ชันแคชจาก Service Worker เอง จะได้ไม่ต้องแก้เลขเวอร์ชันสองที่
+  if(window.caches&&caches.keys)caches.keys().then(k=>logEvt("open",base+" · "+(k.filter(x=>/^pcu-/.test(x)).join(",")||"ยังไม่มีแคช"))).catch(()=>logEvt("open",base));
+  else logEvt("open",base);
 })();
