@@ -48,6 +48,17 @@ main{padding:12px;max-width:820px;margin:auto}
 label{display:block;font-size:12px;color:var(--mut);margin-bottom:4px;font-weight:600}
 input,select{width:100%;padding:11px;border:1px solid var(--field-line);border-radius:10px;font-size:16px;font-family:inherit;background:var(--field);color:var(--txt)}
 input::placeholder{color:var(--mut);opacity:.7}
+/* ===== ช่องวันที่บน iPhone/iPad =====
+   Safari บน iOS/iPadOS ให้ช่อง type=date มีความกว้างขั้นต่ำของตัวเอง จึงดันล้นคอลัมน์ grid ออกนอกการ์ด
+   และจัดตัวเลขวันที่ไว้กลางช่อง ไม่ชิดซ้ายเหมือนช่องอื่น
+   - .grid>div{min-width:0} ยอมให้คอลัมน์หดตามความกว้างจอได้จริง (เบราว์เซอร์อื่นไม่เห็นความต่าง เพราะช่องกรอกกว้าง 100% อยู่แล้ว)
+   - บล็อก @supports(-webkit-touch-callout:none) มีผลเฉพาะ iOS/iPadOS — Chrome, Samsung Internet, Edge ไม่ถูกแตะ
+   - min-height กันช่องยุบเตี้ยลงตอนผู้ใช้กด "ล้าง" ในตัวเลือกวันที่ของ iOS จนช่องว่างเปล่า */
+.grid>div{min-width:0}
+@supports (-webkit-touch-callout:none){
+  input[type="date"]{-webkit-appearance:none;appearance:none;display:block;min-width:0;max-width:100%;min-height:calc(1.2em + 24px);text-align:left}
+  input[type="date"]::-webkit-date-and-time-value{text-align:left;margin:0}
+}
 input:focus,select:focus{outline:2px solid var(--pri);border-color:var(--pri)}
 .hint{font-size:11px;color:var(--mut);margin-top:3px}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:12px 14px;border:0;border-radius:10px;background:var(--pri);color:#fff;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer}
