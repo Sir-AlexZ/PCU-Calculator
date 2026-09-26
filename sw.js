@@ -1,4 +1,4 @@
-const C="pcu-v10"; // ↑ เพิ่มเลขนี้ทุกครั้งที่แก้ style.css / script.js เพื่อบังคับล้างแคชเก่า
+const C="pcu-v11"; // ↑ เพิ่มเลขนี้ทุกครั้งที่แก้ style.css / script.js เพื่อบังคับล้างแคชเก่า
 const ASSETS=["./","./index.html","./style.css","./script.js","./manifest.json"];
 const NET_TIMEOUT=2500; // รอเครือข่ายนานสุดกี่มิลลิวินาที ก่อนยอมหยิบของในแคชมาแสดงก่อน
 
