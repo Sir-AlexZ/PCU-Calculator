@@ -195,6 +195,15 @@ function calc(){
 document.querySelectorAll("input,select").forEach(e=>e.addEventListener("input",calc));
 $("dt").valueAsDate=new Date();calc();
 
+/* ---------- กันค่าเปลี่ยนเวลาหมุนลูกกลิ้งเมาส์ ----------
+   ถ้าช่องตัวเลข/ช่องเลือก กำลังถูกโฟกัสอยู่แล้วผู้ใช้หมุนลูกกลิ้งบนช่องนั้น
+   ให้ปลดโฟกัสออกก่อน → ค่าในช่องจะไม่ถูกเพิ่ม/ลด และหน้าเว็บยังเลื่อนขึ้นลงได้ตามปกติ
+   ดักที่ document จึงครอบคลุมทุกช่อง รวมถึงช่องที่เพิ่มเข้ามาภายหลัง (เช่น cvPct) */
+document.addEventListener("wheel",e=>{
+  const el=document.activeElement;
+  if(el&&(el.matches('input[type="number"]')||el.tagName==="SELECT")&&el.contains(e.target))el.blur();
+},{passive:true,capture:true});
+
 /* ---------- CV: chips / clipboard ---------- */
 const CV_URL="https://www.rama.mahidol.ac.th/cardio_vascular_risk/thai_cv_risk_score/";
 function chips(){
