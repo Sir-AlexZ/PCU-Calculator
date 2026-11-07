@@ -148,6 +148,13 @@
   </div>
 
   <div class="card">
+    <h3>ผลเลือด</h3>
+    <div class="grid">
+      <div><label>คอเลสเตอรอลรวม (mg/dL)</label><input id="chol" type="number" inputmode="numeric" placeholder="เช่น 200"><div class="hint">ถ้าไม่มีผลเลือด เว้นว่างได้ — Thai CV Risk จะใช้รอบเอว/ส่วนสูงแทน</div></div>
+    </div>
+  </div>
+
+  <div class="card">
     <h3>ปัจจัยเสี่ยง</h3>
     <div class="grid">
       <div><label>สูบบุหรี่</label><select id="smoke"><option value="" selected disabled>- กรุณาเลือก -</option><option value="0">ไม่สูบ</option><option value="1">สูบ</option></select></div>
@@ -217,13 +224,16 @@
 
   <div class="card">
     <h3>7) ความเสี่ยงโรคหัวใจและหลอดเลือด (Thai CV Risk)</h3>
-    <div class="res"><span class="k">ความเสี่ยงใน 10 ปี</span><span class="v"><span id="cvV">–</span> <small style="font-size:12px;color:var(--mut)">%</small><br><span id="cvT" class="tag t-mut">–</span></span></div>
+    <div class="res"><span class="k">ความเสี่ยงใน 10 ปี — คำนวณโดยแอป<br><small id="cvCalcF" style="font-size:11px"></small></span><span class="v"><span id="cvCalcV">–</span> <small style="font-size:12px;color:var(--mut)">%</small><br><span id="cvCalcT" class="tag t-mut">–</span></span></div>
+    <!-- กล่องแจ้ง: บอกว่าต้องกรอกอะไรเพิ่ม หรือเตือนเมื่ออายุไม่อยู่ในช่วง 35–70 ปี -->
+    <div id="cvCalcMsg" class="note hidden" style="margin:8px 0"></div>
+    <div class="res"><span class="k">ค่าที่กรอกจากเว็บรามาฯ</span><span class="v"><span id="cvV">–</span> <small style="font-size:12px;color:var(--mut)">%</small><br><span id="cvT" class="tag t-mut">–</span></span></div>
     <table><tr><th>ระดับความเสี่ยง</th><th>ค่า %</th></tr>
       <tr id="cv1"><td>ความเสี่ยงต่ำ</td><td>น้อยกว่า 10%</td></tr>
       <tr id="cv2"><td>ความเสี่ยงปานกลาง</td><td>10% – 19.9%</td></tr>
       <tr id="cv3"><td>ความเสี่ยงสูง</td><td>20% – 29.9%</td></tr>
       <tr id="cv4"><td>ความเสี่ยงสูงมาก</td><td>ตั้งแต่ 30% ขึ้นไป</td></tr></table>
-    <div class="hint">กรอกค่าได้ที่แท็บ ❤️ Thai CV Risk</div>
+    <div class="hint">ค่าที่แอปคำนวณใช้สูตรเดียวกับเว็บรามาธิบดี (ทดสอบเทียบแล้วตรงกัน) · ค่าจากเว็บรามาฯ กรอกได้ที่แท็บ ❤️ Thai CV Risk · แถบสีในตารางยึดค่าที่แอปคำนวณ ถ้าคำนวณไม่ได้จะใช้ค่าที่กรอกจากเว็บแทน</div>
   </div>
 
   <div class="row noprint">
