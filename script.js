@@ -43,6 +43,36 @@ const HT_T=[["Optimal","<120","และ","<80","ต่ำกว่าเกณ�
  ["HT grade 2","160-179","และ/หรือ","100-109","ความดันสูงระดับ 2","t-bad"],["HT grade 3","≥180","และ/หรือ","≥110","ความดันสูงระดับ 3","t-vbad"],
  ["Isolated Systolic HT","≥140","และ","<90","ความดันตัวบนสูงเดี่ยว","t-bad"]];
 
+/* ---------- Thai CV Risk: สูตรเดียวกับเว็บรามาธิบดี ----------
+   ทดสอบเทียบกับเว็บรามาฯ 12 เคส (พ.ย. 2569) ได้ตรงกันถึงทศนิยม 2 ตำแหน่ง
+   - มีคอเลสเตอรอลรวม → สูตรใช้ผลเลือด / ไม่มี → สูตรใช้รอบเอว/ส่วนสูง
+   - เลียนแบบวิธีที่เว็บรามาฯ รับค่ารอบเอวและส่วนสูง "เฉพาะในฟังก์ชันนี้":
+       รอบเอว ซม. → นิ้วจำนวนเต็ม (.5 ปัดขึ้น) → ×2.5 แล้วตัดเศษ · ส่วนสูงปัดเป็นจำนวนเต็ม
+     ไม่แก้ค่าที่ผู้ใช้กรอก ไม่กระทบ hint นิ้ว / WHR / DM Risk / ค่าที่บันทึก
+   - +1e-9 กันทศนิยมคอมพิวเตอร์คลาดเล็กน้อย (เช่น x.5 กลายเป็น x.4999… แล้วถูกปัดลง)
+   male, dm, smoke = 1/0 · chol = mg/dL · คืนค่า % */
+function thaiCVRisk({age,male,sbp,dm,smoke,chol,waistCm,heightCm}){
+  let fs,mean;
+  if(chol>0){
+    fs=0.08183*age+0.39499*male+0.02084*sbp+0.69974*dm+0.00212*chol+0.41916*smoke;
+    mean=7.044233;
+  }else if(waistCm>0&&heightCm>0){
+    const waistInch=Math.round(waistCm/2.54+1e-9);
+    const waistRama=Math.floor(waistInch*2.5);
+    const heightRama=Math.round(heightCm+1e-9);
+    fs=0.079*age+0.128*male+0.019350987*sbp+0.58454*dm+3.512566*(waistRama/heightRama)+0.459*smoke;
+    mean=7.712325;
+  }else return null;
+  return (1-Math.pow(0.964588,Math.exp(fs-mean)))*100;
+}
+/* แปลผล %CV Risk เป็นระดับ (ใช้ร่วมกันทั้งค่าที่แอปคำนวณ และค่าที่กรอกจากเว็บรามาฯ) */
+function cvLevel(v){
+  if(v<10)return ["ความเสี่ยงต่ำ","t-ok",1];
+  if(v<20)return ["ความเสี่ยงปานกลาง","t-warn",2];
+  if(v<30)return ["ความเสี่ยงสูง","t-bad",3];
+  return ["ความเสี่ยงสูงมาก","t-vbad",4];
+}
+
 /* ---------- CORE CALC ---------- */
 let R={};
 function calc(){
@@ -156,19 +186,50 @@ function calc(){
   dt2+=`<tr class="hl"><td colspan="2">รวมคะแนน</td><td><b>${tot}</b></td></tr>`;
   $("dmTb").innerHTML=dt2;
 
-  /* --- CV RISK --- */
+  /* --- CV RISK: คำนวณโดยแอป --- */
+  const smokeSel=$("smoke").value, dmSel=$("dm").value, chol=n("chol");
+  const hasChol=!blank("chol")&&chol>0, hasWH=wc>0&&ht>0;
+  const need=[];
+  if(blank("age")||age<=0)need.push("อายุ");
+  if(!sexOK)need.push("เพศ");
+  if(blank("sbp")||sbp<=0)need.push("SBP");
+  if(smokeSel==="")need.push("สูบบุหรี่");
+  if(dmSel==="")need.push("เป็นโรคเบาหวาน");
+  if(!hasChol&&!hasWH)need.push("คอเลสเตอรอลรวม หรือ รอบเอว + ส่วนสูง");
+  let cvCalc=null,cvCalcTxt="",cvCalcCls="t-mut",cvCalcSrc="",cvCalcIdx=-1;
+  const cvMsgEl=$("cvCalcMsg");
+  if(need.length){
+    $("cvCalcV").textContent="–";
+    setTag($("cvCalcT"),"ยังกรอกไม่ครบ","t-mut");
+    $("cvCalcF").textContent="";
+    cvMsgEl.innerHTML="📝 <b>ยังคำนวณไม่ได้</b> — ต้องกรอกเพิ่ม: "+need.map(esc).join(" · ");
+    cvMsgEl.classList.remove("hidden");
+  }else{
+    cvCalc=thaiCVRisk({age,male:sex==="M"?1:0,sbp,dm:dmSel==="1"?1:0,smoke:smokeSel==="1"?1:0,
+                       chol:hasChol?chol:0,waistCm:wc,heightCm:ht});
+    cvCalcSrc=hasChol?"สูตรใช้ผลเลือด (คอเลสเตอรอลรวม)":"สูตรไม่ใช้ผลเลือด (รอบเอว/ส่วนสูง)";
+    [cvCalcTxt,cvCalcCls,cvCalcIdx]=cvLevel(cvCalc);
+    $("cvCalcV").textContent=cvCalc.toFixed(2);
+    setTag($("cvCalcT"),cvCalcTxt,cvCalcCls);
+    $("cvCalcF").textContent=cvCalcSrc;
+    if(age<35||age>70){
+      cvMsgEl.innerHTML="⚠️ <b>อายุ "+esc(age)+" ปี ไม่อยู่ในช่วง 35–70 ปี</b> — ค่าที่ได้อาจไม่ตรงกับความเสี่ยงจริง เพราะงานวิจัยที่ใช้สร้างสูตรนี้ไม่ครอบคลุมกลุ่มอายุนี้";
+      cvMsgEl.classList.remove("hidden");
+    }else{cvMsgEl.innerHTML="";cvMsgEl.classList.add("hidden")}
+  }
+
+  /* --- CV RISK: ค่าที่กรอกจากเว็บรามาฯ (เหมือนเดิม) --- */
   const cvEl=$("cvPct");
   const cv=cvEl?parseFloat(cvEl.value):NaN;
   let cvTxt="",cvCls="t-mut",cvIdx=-1;
   ["cv1","cv2","cv3","cv4"].forEach(i=>{if($(i))$(i).className=""});
   if(isFinite(cv)&&cv>=0){
-    if(cv<10){cvTxt="ความเสี่ยงต่ำ";cvCls="t-ok";cvIdx=1}
-    else if(cv<20){cvTxt="ความเสี่ยงปานกลาง";cvCls="t-warn";cvIdx=2}
-    else if(cv<30){cvTxt="ความเสี่ยงสูง";cvCls="t-bad";cvIdx=3}
-    else{cvTxt="ความเสี่ยงสูงมาก";cvCls="t-vbad";cvIdx=4}
-    if($("cv"+cvIdx))$("cv"+cvIdx).className="hl";
+    [cvTxt,cvCls,cvIdx]=cvLevel(cv);
     $("cvV").textContent=cv.toFixed(1);
   }else $("cvV").textContent="–";
+  /* แถบสีในตาราง: ยึดค่าที่แอปคำนวณ ถ้าคำนวณไม่ได้ใช้ค่าที่กรอกจากเว็บแทน */
+  const hlIdx=cvCalcIdx>0?cvCalcIdx:cvIdx;
+  if(hlIdx>0&&$("cv"+hlIdx))$("cv"+hlIdx).className="hl";
   setTag($("cvT"),isFinite(cv)?cvTxt:"ยังไม่ได้กรอก",cvCls);
   setTag($("cvT2"),isFinite(cv)?cvTxt:"ยังไม่ได้กรอก",cvCls);
 
@@ -187,6 +248,8 @@ function calc(){
      bmi:bmi?+bmi.toFixed(1):"",bmiTxt:bmi?bi[2]:"",whr:whr?+whr.toFixed(2):"",whrTxt,
      wcInch,hcInch,wcTxt,
      cvRisk:isFinite(cv)?+cv.toFixed(1):"",cvTxt:isFinite(cv)?cvTxt:"",
+     chol:blank("chol")?"":chol,
+     cvCalc:cvCalc!==null?+cvCalc.toFixed(2):"",cvCalcTxt,cvCalcSrc,
      osta:osta!==null?+osta.toFixed(2):"",ostaTxt,gripR:rr?+rr.toFixed(2):"",gripRTxt:ri?ri[1]:"",
      gripL:lr?+lr.toFixed(2):"",gripLTxt:li?li[1]:"",htCat:hRow?hRow[0]:"",htTxt:hRow?hRow[4]:"",
      dmScore:dmIncomplete?"":tot,dmTxt:dTxt};
@@ -273,7 +336,9 @@ const COLS=[["วันที่","date"],["ชื่อ-สกุล","name"],[
  ["WHR","whr"],["แปลผล WHR","whrTxt"],
  ["OSTA","osta"],["แปลผล OSTA","ostaTxt"],["SBP","sbp"],["DBP","dbp"],["HT Category","htCat"],["สรุป HT","htTxt"],
  ["บีบมือขวา(กก.)","gr"],["อัตราส่วนขวา","gripR"],["ระดับขวา","gripRTxt"],["บีบมือซ้าย(กก.)","gl"],["อัตราส่วนซ้าย","gripL"],["ระดับซ้าย","gripLTxt"],
+ ["คอเลสเตอรอลรวม(mg/dL)","chol"],
  ["สูบบุหรี่","smoke"],["เบาหวาน","dm"],["ประวัติ DM ครอบครัว","fdm"],["คะแนน DM Risk","dmScore"],["สรุป DM Risk","dmTxt"],
+ ["%CV Risk คำนวณโดยแอป","cvCalc"],["ระดับ CV Risk (แอป)","cvCalcTxt"],["สูตร CV Risk (แอป)","cvCalcSrc"],
  ["%CV Risk (10 ปี)","cvRisk"],["ระดับ CV Risk","cvTxt"]];
 
 /* ---------- EXCEL / CSV Export Functions ---------- */
@@ -374,6 +439,7 @@ function renderHist(){
       <span class="chip">DM ${has(r.dmScore)?esc(r.dmScore)+` คะแนน (${esc(r.dmTxt)})`:"ยังไม่ได้กรอกครบ"}</span>
       <span class="chip">Grip R ${has(r.gripR)?esc(r.gripR):"–"} / L ${has(r.gripL)?esc(r.gripL):"–"}</span>
       <span class="chip">รอบเอว ${has(r.wc)?`${esc(r.wc)} ซม. (${esc(r.wcInch||"–")} นิ้ว) ${esc(r.wcTxt)}`:"ยังไม่ได้กรอก"}</span>
+      ${has(r.cvCalc)?`<span class="chip">CV Risk (แอป) ${esc(r.cvCalc)}% (${esc(r.cvCalcTxt)})</span>`:""}
       ${has(r.cvRisk)?`<span class="chip">CV Risk ${esc(r.cvRisk)}% (${esc(r.cvTxt)})</span>`:""}
     </div>
     <div class="row">
@@ -391,6 +457,7 @@ function reuse(id){const r=load().find(x=>x.id===id);if(!r)return;
   $("dm").value=r.dm==="เป็น"?"1":r.dm==="ไม่เป็น"?"0":"";
   $("fdm").value=r.fdm==="มี"?"1":r.fdm==="ไม่มี"?"0":"";$("dt").value=r.date||"";
   $("cvPct").value=(r.cvRisk??"");
+  $("chol").value=(r.chol??"");   // ประวัติเก่าที่ยังไม่มีช่องนี้ จะได้ช่องว่าง
   calc();go("out");toast("โหลดข้อมูลแล้ว");}
 function one(id){
   const r = load().find(x => x.id === id);
